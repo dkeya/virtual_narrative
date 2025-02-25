@@ -3,6 +3,17 @@ import re  # Import regex for extracting numeric scores
 import pandas as pd  # Import pandas for DataFrame representation
 import plotly.graph_objects as go  # For the gauge chart
 
+st.markdown(
+    """
+    <style>
+        header {
+            visibility: hidden;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # ✅ Display Logo & Title (Only Once)
 st.image("logo.png", width=250)  # Adjust width as needed
 st.title("The Virtual Narrative: Data Maturity Assessment Tool")
