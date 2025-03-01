@@ -3,16 +3,6 @@ import re  # Import regex for extracting numeric scores
 import pandas as pd  # Import pandas for DataFrame representation
 import plotly.graph_objects as go  # For the gauge chart
 
-hide_streamlit_style = """
-    <style>
-        #MainMenu {visibility: hidden;}
-        footer {visibility: hidden;}
-        header {visibility: hidden;}
-    </style>
-"""
-
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
-
 # ✅ Display Logo & Title (Only Once)
 st.image("logo.png", width=250)  # Adjust width as needed
 st.title("The Virtual Narrative: Data Maturity Assessment Tool")
@@ -26,7 +16,13 @@ session_defaults = {
     "metadata_management_complete": False,
     "data_integration_complete": False,
     "data_analytics_complete": False,
-    "data_security_complete": False
+    "data_security_complete": False,
+    "gov_q1_response": " (1)",  # Separate variable to store the response
+    "dq1_response": " (1)",     # Separate variable to store the response
+    "mm1_response": " (1)",     # Separate variable to store the response
+    "di1_response": " (1)",     # Separate variable to store the response
+    "ai1_response": " (1)",     # Separate variable to store the response
+    "sp1_response": " (1)"      # Separate variable to store the response
 }
 for key, value in session_defaults.items():
     if key not in st.session_state:
@@ -98,6 +94,7 @@ if st.session_state.start_assessment and not st.session_state.data_governance_co
 
     if st.button("Submit Governance Responses"):
         st.session_state.data_governance_complete = True
+        st.session_state.gov_q1_response = gov_q1  # Store the response in a separate session state variable
         st.success("✅ Responses recorded! Moving to the next section.")
 
 # 📊 **SECTION 2: DATA QUALITY**
@@ -132,6 +129,7 @@ if st.session_state.data_governance_complete and not st.session_state.data_quali
 
     if st.button("Submit Data Quality Responses"):
         st.session_state.data_quality_complete = True
+        st.session_state.dq1_response = dq1  # Store the response in a separate session state variable
         st.success("✅ Data Quality responses submitted! Moving to Metadata Management.")
 
 # 🏷 **SECTION 3: METADATA MANAGEMENT**
@@ -166,14 +164,15 @@ if st.session_state.data_quality_complete and not st.session_state.metadata_mana
 
     if st.button("Submit Metadata Management Responses"):
         st.session_state.metadata_management_complete = True
+        st.session_state.mm1_response = mm1  # Store the response in a separate session state variable
         st.success("✅ Metadata Management responses submitted! Moving to Data Integration.")
-    
-    # 🔗 **SECTION 4: DATA INTEGRATION**
-if st.session_state.data_governance_complete and not st.session_state.data_integration_complete:
+
+# 🔗 **SECTION 4: DATA INTEGRATION**
+if st.session_state.metadata_management_complete and not st.session_state.data_integration_complete:
     st.write("## 🔗 Section 4: Data Integration")
     st.write("This section evaluates how well data is integrated across your organization, ensuring seamless interoperability.")
 
-    # ✅ Store values correctly without modifying `session_state`
+    # ✅ Store values correctly without modifying session_state
     di1 = st.radio("1️⃣ **How does your organization handle data integration between different systems?**",
                    ["No integration exists (1)",
                     "Manual data transfers (2)",
@@ -200,6 +199,7 @@ if st.session_state.data_governance_complete and not st.session_state.data_integ
 
     if st.button("Submit Data Integration Responses"):
         st.session_state.data_integration_complete = True
+        st.session_state.di1_response = di1  # Store the response in a separate session state variable
         st.success("✅ Data Integration responses submitted! Moving to Data Analytics & AI.")
 
 # 📊 **SECTION 5: DATA ANALYTICS & AI**
@@ -207,7 +207,7 @@ if st.session_state.data_integration_complete and not st.session_state.data_anal
     st.write("## 📊 Section 5: Data Analytics & AI")
     st.write("This section assesses your organization's ability to leverage data analytics and AI for decision-making.")
 
-    # ✅ Store values correctly without modifying `session_state`
+    # ✅ Store values correctly without modifying session_state
     ai1 = st.radio("1️⃣ **What is the level of adoption of business intelligence and reporting in your organization?**",
                    ["No formal reporting (1)",
                     "Basic manual reports with spreadsheets (2)",
@@ -235,6 +235,7 @@ if st.session_state.data_integration_complete and not st.session_state.data_anal
 
     if st.button("Submit Data Analytics & AI Responses"):
         st.session_state.data_analytics_complete = True
+        st.session_state.ai1_response = ai1  # Store the response in a separate session state variable
         st.success("✅ Data Analytics & AI responses submitted! Moving to Data Security & Privacy.")
 
 # 🔒 **SECTION 6: DATA SECURITY & PRIVACY**
@@ -242,7 +243,7 @@ if st.session_state.data_analytics_complete and not st.session_state.data_securi
     st.write("## 🔒 Section 6: Data Security & Privacy")
     st.write("This section evaluates how well your organization ensures data security, privacy, and compliance with regulations.")
 
-    # ✅ Store values correctly without modifying `session_state`
+    # ✅ Store values correctly without modifying session_state
     sp1 = st.radio("1️⃣ **How is access to sensitive data controlled in your organization?**",
                    ["No access control (1)",
                     "Basic password protection (2)",
@@ -270,6 +271,7 @@ if st.session_state.data_analytics_complete and not st.session_state.data_securi
 
     if st.button("Submit Data Security & Privacy Responses"):
         st.session_state.data_security_complete = True
+        st.session_state.sp1_response = sp1  # Store the response in a separate session state variable
         st.success("✅ Data Security & Privacy responses submitted! Assessment complete.")
 
 # Function to create the gauge chart
@@ -293,7 +295,7 @@ def create_gauge_chart(score):
                    'value': score}
         }
     ))
-    
+
     fig.update_layout(width=500, height=300)
     return fig
 
@@ -314,12 +316,12 @@ if any([
 ]):
     # Calculate the average maturity score
     scores = {
-        "Data Governance": extract_score(st.session_state.get("gov_q1", " (1)")),
-        "Data Quality": extract_score(st.session_state.get("dq1", " (1)")),
-        "Metadata Management": extract_score(st.session_state.get("mm1", " (1)")),
-        "Data Integration": extract_score(st.session_state.get("di1", " (1)")),
-        "Data Analytics & AI": extract_score(st.session_state.get("ai1", " (1)")),
-        "Data Security & Privacy": extract_score(st.session_state.get("sp1", " (1)"))
+        "Data Governance": extract_score(st.session_state.get("gov_q1_response", " (1)")),
+        "Data Quality": extract_score(st.session_state.get("dq1_response", " (1)")),
+        "Metadata Management": extract_score(st.session_state.get("mm1_response", " (1)")),
+        "Data Integration": extract_score(st.session_state.get("di1_response", " (1)")),
+        "Data Analytics & AI": extract_score(st.session_state.get("ai1_response", " (1)")),
+        "Data Security & Privacy": extract_score(st.session_state.get("sp1_response", " (1)"))
     }
 
     # ✅ Calculate the average maturity score (between 1 and 5)
@@ -356,3 +358,5 @@ if any([
         st.write(f"✅ **{category}**: {score}/5")
 
     st.success("🎉 Congratulations on completing The Virtual Narrative: Data Maturity Assessment!")
+
+
