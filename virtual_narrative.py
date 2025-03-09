@@ -34,13 +34,14 @@ def create_gauge_chart(score):
     return fig
 
 # ✅ Set page configuration to wide mode (MUST be the first Streamlit command)
-st.set_page_config(page_title="The Virtual Narrative", page_icon="🌀", layout="wide")
+st.set_page_config(page_title="The Virtual Narrative", page_icon="🌐", layout="wide")
 
 # ✅ Initialize Session State Variables (Only Once)
 session_defaults = {
     "start_assessment": False,
     "data_privacy_accepted": False,
-    "user_info_complete": False,  # Track if user info is completed
+    "user_info_complete": False,
+    "dynamic_weights_set": False,  # Track if dynamic weights are set
     "data_governance_complete": False,
     "data_quality_complete": False,
     "metadata_management_complete": False,
@@ -48,6 +49,14 @@ session_defaults = {
     "data_analytics_complete": False,
     "data_security_complete": False,
     "all_sections_completed": False,
+    "weights": {  # Default weights (will be updated dynamically)
+        "Data Governance": 0.20,
+        "Data Quality": 0.20,
+        "Metadata Management": 0.15,
+        "Data Integration": 0.15,
+        "Data Analytics & AI": 0.15,
+        "Data Security & Privacy": 0.15
+    },
     "gov_q1_response": " (1)", "gov_q2_response": " (1)", "gov_q3_response": " (1)",
     "dq1_response": " (1)", "dq2_response": " (1)", "dq3_response": " (1)",
     "mm1_response": " (1)", "mm2_response": " (1)", "mm3_response": " (1)",
@@ -142,6 +151,73 @@ if st.session_state.data_privacy_accepted and not st.session_state.user_info_com
             st.session_state.user_info_complete = True
             st.success(f"Great, {first_name}! Let's begin your Data Maturity Assessment.")
 
+# ✅ Dynamic Weighting Section
+if st.session_state.user_info_complete and not st.session_state.dynamic_weights_set:
+    st.write("## ⚖️ Dynamic Weighting")
+    st.write("This section helps us understand your organization's priorities to tailor the assessment.")
+
+    governance_score = st.radio("1️⃣ **How important is it for your organization to have clear data ownership and accountability?**",
+                                ["Not Important (1)",
+                                 "Slightly Important (2)",
+                                 "Moderately Important (3)",
+                                 "Very Important (4)",
+                                 "Extremely Important (5)"], key="gov_weight")
+    quality_score = st.radio("2️⃣ **How critical is data accuracy and completeness for your organization's decision-making?**",
+                             ["Not Critical (1)",
+                              "Slightly Critical (2)",
+                              "Moderately Critical (3)",
+                              "Very Critical (4)",
+                              "Extremely Critical (5)"], key="dq_weight")
+    metadata_score = st.radio("3️⃣ **How important is it for your organization to have a centralized metadata repository?**",
+                              ["Not Important (1)",
+                               "Slightly Important (2)",
+                               "Moderately Important (3)",
+                               "Very Important (4)",
+                               "Extremely Important (5)"], key="mm_weight")
+    integration_score = st.radio("4️⃣ **How important is seamless data integration across different systems for your organization?**",
+                                 ["Not Important (1)",
+                                  "Slightly Important (2)",
+                                  "Moderately Important (3)",
+                                  "Very Important (4)",
+                                  "Extremely Important (5)"], key="di_weight")
+    analytics_score = st.radio("5️⃣ **How important is leveraging data analytics and AI for decision-making in your organization?**",
+                               ["Not Important (1)",
+                                "Slightly Important (2)",
+                                "Moderately Important (3)",
+                                "Very Important (4)",
+                                "Extremely Important (5)"], key="ai_weight")
+    security_score = st.radio("6️⃣ **How important is ensuring data security and compliance with regulations for your organization?**",
+                              ["Not Important (1)",
+                               "Slightly Important (2)",
+                               "Moderately Important (3)",
+                               "Very Important (4)",
+                               "Extremely Important (5)"], key="sp_weight")
+
+    if st.button("Set Weights"):
+        # Extract scores from responses
+        governance_score = extract_score(governance_score)
+        quality_score = extract_score(quality_score)
+        metadata_score = extract_score(metadata_score)
+        integration_score = extract_score(integration_score)
+        analytics_score = extract_score(analytics_score)
+        security_score = extract_score(security_score)
+
+        # Calculate total score
+        total_score = governance_score + quality_score + metadata_score + integration_score + analytics_score + security_score
+
+        # Assign weights
+        st.session_state.weights = {
+            "Data Governance": governance_score / total_score,
+            "Data Quality": quality_score / total_score,
+            "Metadata Management": metadata_score / total_score,
+            "Data Integration": integration_score / total_score,
+            "Data Analytics & AI": analytics_score / total_score,
+            "Data Security & Privacy": security_score / total_score
+        }
+
+        st.session_state.dynamic_weights_set = True
+        st.success("✅ Weights set! Moving to the next section.")
+
 # ✅ Track Completion Progress
 total_sections = 6  # Total number of assessment sections
 def calculate_progress():
@@ -162,7 +238,7 @@ if st.session_state.start_assessment:
     st.write(f"🟢 **Progress: {progress}% Complete**")
 
 # 🏛️ **SECTION 1: DATA GOVERNANCE**
-if st.session_state.user_info_complete and not st.session_state.data_governance_complete:
+if st.session_state.dynamic_weights_set and not st.session_state.data_governance_complete:
     st.write("## 🏛️ Section 1: Data Governance")
     st.write("This section assesses how well data governance is established in your organization.")
 
@@ -402,35 +478,90 @@ if st.session_state.data_analytics_complete and not st.session_state.data_securi
             st.success("✅ Data Security & Privacy responses submitted! Assessment complete.")
             st.session_state.all_sections_completed = True
 
+# ✅ Function to Generate AI-Driven Insights
+def generate_ai_insights(scores):
+    """Generate AI-driven insights based on the user's responses."""
+    insights = []
+
+    # Data Governance Insights
+    if scores["Data Governance"] <= 2:
+        insights.append("🔴 **Data Governance**: Your organization lacks formal governance policies. Consider establishing a data governance framework with clear roles and responsibilities.")
+    elif scores["Data Governance"] <= 3.5:
+        insights.append("🟡 **Data Governance**: Your governance policies are in place but need better enforcement. Focus on consistent monitoring and accountability.")
+    else:
+        insights.append("🟢 **Data Governance**: Your governance policies are well-established. Continue optimizing with automation and AI-driven insights.")
+
+    # Data Quality Insights
+    if scores["Data Quality"] <= 2:
+        insights.append("🔴 **Data Quality**: Data accuracy and completeness are major concerns. Implement automated validation and monitoring processes.")
+    elif scores["Data Quality"] <= 3.5:
+        insights.append("🟡 **Data Quality**: Your data quality processes are improving but need more automation. Consider AI-powered real-time monitoring.")
+    else:
+        insights.append("🟢 **Data Quality**: Your data quality is excellent. Focus on maintaining consistency and exploring advanced analytics.")
+
+    # Metadata Management Insights
+    if scores["Metadata Management"] <= 2:
+        insights.append("🔴 **Metadata Management**: Metadata is poorly managed. Establish a centralized metadata repository and enforce standardized definitions.")
+    elif scores["Metadata Management"] <= 3.5:
+        insights.append("🟡 **Metadata Management**: Metadata management is improving but lacks automation. Consider AI-driven lineage tracking.")
+    else:
+        insights.append("🟢 **Metadata Management**: Metadata is well-managed. Continue leveraging AI for real-time anomaly detection.")
+
+    # Data Integration Insights
+    if scores["Data Integration"] <= 2:
+        insights.append("🔴 **Data Integration**: Data integration is manual and inconsistent. Invest in automated API-based data flows.")
+    elif scores["Data Integration"] <= 3.5:
+        insights.append("🟡 **Data Integration**: Integration processes are improving but need more automation. Consider real-time synchronization.")
+    else:
+        insights.append("🟢 **Data Integration**: Data integration is seamless. Explore AI-driven multi-cloud integration.")
+
+    # Data Analytics & AI Insights
+    if scores["Data Analytics & AI"] <= 2:
+        insights.append("🔴 **Data Analytics & AI**: Analytics adoption is low. Start with basic reporting and explore predictive analytics.")
+    elif scores["Data Analytics & AI"] <= 3.5:
+        insights.append("🟡 **Data Analytics & AI**: Analytics adoption is growing. Focus on embedding machine learning models into core processes.")
+    else:
+        insights.append("🟢 **Data Analytics & AI**: Analytics adoption is excellent. Continue leveraging AI for decision intelligence.")
+
+    # Data Security & Privacy Insights
+    if scores["Data Security & Privacy"] <= 2:
+        insights.append("🔴 **Data Security & Privacy**: Security measures are weak. Implement role-based access control and encryption.")
+    elif scores["Data Security & Privacy"] <= 3.5:
+        insights.append("🟡 **Data Security & Privacy**: Security measures are improving but need better enforcement. Consider continuous compliance monitoring.")
+    else:
+        insights.append("🟢 **Data Security & Privacy**: Security measures are robust. Focus on AI-driven anomaly detection and zero-trust models.")
+
+    return insights
+
 # ✅ Display Data Maturity Score after all sections are completed
 if st.session_state.all_sections_completed:
-    # Calculate the average maturity score
-    scores = {
-        "Data Governance": extract_score(st.session_state.get("gov_q1_response", " (1)")),
-        "Data Quality": extract_score(st.session_state.get("dq1_response", " (1)")),
-        "Metadata Management": extract_score(st.session_state.get("mm1_response", " (1)")),
-        "Data Integration": extract_score(st.session_state.get("di1_response", " (1)")),
-        "Data Analytics & AI": extract_score(st.session_state.get("ai1_response", " (1)")),
-        "Data Security & Privacy": extract_score(st.session_state.get("sp1_response", " (1)"))
+    # Calculate the weighted average maturity score
+    weighted_scores = {
+        "Data Governance": extract_score(st.session_state.get("gov_q1_response", " (1)")) * st.session_state.weights["Data Governance"],
+        "Data Quality": extract_score(st.session_state.get("dq1_response", " (1)")) * st.session_state.weights["Data Quality"],
+        "Metadata Management": extract_score(st.session_state.get("mm1_response", " (1)")) * st.session_state.weights["Metadata Management"],
+        "Data Integration": extract_score(st.session_state.get("di1_response", " (1)")) * st.session_state.weights["Data Integration"],
+        "Data Analytics & AI": extract_score(st.session_state.get("ai1_response", " (1)")) * st.session_state.weights["Data Analytics & AI"],
+        "Data Security & Privacy": extract_score(st.session_state.get("sp1_response", " (1)")) * st.session_state.weights["Data Security & Privacy"]
     }
 
-    # Calculate the average maturity score (between 1 and 5)
-    avg_score = sum(scores.values()) / len(scores)
+    # Calculate the weighted average maturity score (between 1 and 5)
+    weighted_avg_score = sum(weighted_scores.values())
 
-    # Create and display the gauge chart
-    st.plotly_chart(create_gauge_chart(avg_score))
+    # Create and display the gauge chart with a unique key
+    st.plotly_chart(create_gauge_chart(weighted_avg_score), key="gauge_chart_final")
 
     # Determine Maturity Level & Recommendations
-    if avg_score <= 1.5:
+    if weighted_avg_score <= 1.5:
         maturity_level = "🔴 Initial/Ad Hoc"
         recommendation = "You are at the beginning point for Data Management. Start by defining data governance policies and improving data quality."
-    elif avg_score <= 2.5:
+    elif weighted_avg_score <= 2.5:
         maturity_level = "🟠 Developing"
         recommendation = "You have basic policies but lack consistency. Focus on standardizing processes and improving data integration."
-    elif avg_score <= 3.5:
+    elif weighted_avg_score <= 3.5:
         maturity_level = "🟡 Defined"
         recommendation = "You have structured processes, but there is room for more automation and real-time analytics."
-    elif avg_score <= 4.5:
+    elif weighted_avg_score <= 4.5:
         maturity_level = "🟢 Managed"
         recommendation = "Your organization has well-established data governance. Continue refining automation and advanced analytics adoption."
     else:
@@ -439,12 +570,25 @@ if st.session_state.all_sections_completed:
 
     # Display the score and recommendation
     st.write(f"### 🎯 Your Organization's Maturity Level: {maturity_level}")
-    st.write(f"📊 **Average Maturity Score:** {avg_score:.2f}/5")
+    st.write(f"📊 **Weighted Average Maturity Score:** {weighted_avg_score:.2f}/5")
     st.write(f"💡 **Recommendation:** {recommendation}")
 
     # Display Individual Scores Breakdown
-    st.write("### 📌 Breakdown by Category")
-    for category, score in scores.items():
-        st.write(f"✅ **{category}**: {score}/5")
+    st.write("### 📌 Breakdown by Category (Weighted Scores)")
+    for category, score in weighted_scores.items():
+        st.write(f"✅ **{category}**: {score:.2f}/5")
+
+    # Generate and display AI-driven insights
+    st.write("### 🤖 AI-Driven Insights")
+    insights = generate_ai_insights({
+        "Data Governance": extract_score(st.session_state.get("gov_q1_response", " (1)")),
+        "Data Quality": extract_score(st.session_state.get("dq1_response", " (1)")),
+        "Metadata Management": extract_score(st.session_state.get("mm1_response", " (1)")),
+        "Data Integration": extract_score(st.session_state.get("di1_response", " (1)")),
+        "Data Analytics & AI": extract_score(st.session_state.get("ai1_response", " (1)")),
+        "Data Security & Privacy": extract_score(st.session_state.get("sp1_response", " (1)"))
+    })
+    for insight in insights:
+        st.write(insight)
 
     st.success("🎉 Congratulations on completing The Virtual Narrative: Data Maturity Assessment!")
