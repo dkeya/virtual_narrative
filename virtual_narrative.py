@@ -2,6 +2,7 @@ import streamlit as st
 import base64  # For base64 encoding
 import plotly.graph_objects as go  # For the gauge chart
 import re  # For extracting numeric scores
+from fpdf import FPDF  # For generating PDF reports
 
 # ✅ Function to Extract Numeric Scores from Responses
 def extract_score(response):
@@ -533,6 +534,231 @@ def generate_ai_insights(scores):
 
     return insights
 
+# ✅ Define Analytics Capabilities for Each Maturity Stage
+analytics_capabilities = {
+    "Initial/Ad Hoc": {
+        "capabilities": [
+            "Descriptive Analytics: Reporting and summarizing past data.",
+            "Manual Reporting: Periodic reporting using basic tools like Excel.",
+            "Limited Automation: Minimal automation in data collection and reporting."
+        ],
+        "example": "Tracking monthly sales with basic Excel sheets."
+    },
+    "Developing": {
+        "capabilities": [
+            "Basic Diagnostic Analytics: Understanding why certain outcomes occurred.",
+            "Standardized Reports: Some standardization in reporting.",
+            "Some Automation: Introduction of basic analytics tools and dashboards."
+        ],
+        "example": "Dashboards showing sales performance against targets."
+    },
+    "Defined": {
+        "capabilities": [
+            "Predictive Analytics: Forecasting future outcomes using statistical techniques.",
+            "Automated Reporting: Self-service dashboards and automated insights.",
+            "Data-Driven Decision-Making: Reports and analysis directly influence decisions."
+        ],
+        "example": "Predicting customer churn using historical data."
+    },
+    "Managed": {
+        "capabilities": [
+            "Prescriptive Analytics: Recommending actions based on predictive models.",
+            "Advanced Reporting: Real-time dashboards and actionable insights.",
+            "Integrated Analytics: Analytics tools embedded in business processes."
+        ],
+        "example": "Dynamic product recommendations based on customer behavior."
+    },
+    "Optimized": {
+        "capabilities": [
+            "Cognitive/AI Analytics: AI-driven insights and self-learning systems.",
+            "Real-Time Decision-Making: Autonomous systems adjust to new data.",
+            "Integrated AI: AI and machine learning integrated into core business functions."
+        ],
+        "example": "Real-time pricing adjustments based on market conditions."
+    }
+}
+
+# ✅ Define Dynamic Recommendations for Each Maturity Stage
+dynamic_recommendations = {
+    "Initial/Ad Hoc": {
+        "recommendations": [
+            "Establish a formal data governance framework to define roles and responsibilities.",
+            "Implement basic data quality checks to ensure accuracy and completeness.",
+            "Start using simple reporting tools (e.g., Excel, Google Sheets) to track key metrics."
+        ],
+        "next_steps": [
+            "Move towards basic diagnostic analytics by introducing business intelligence tools (e.g., Tableau, Power BI).",
+            "Standardize reporting processes to reduce manual effort."
+        ]
+    },
+    "Developing": {
+        "recommendations": [
+            "Standardize data definitions and metadata management to improve consistency.",
+            "Automate data collection and reporting processes to reduce manual effort.",
+            "Introduce basic diagnostic analytics to understand trends and patterns."
+        ],
+        "next_steps": [
+            "Adopt predictive analytics to forecast future outcomes.",
+            "Invest in self-service dashboards to empower business users."
+        ]
+    },
+    "Defined": {
+        "recommendations": [
+            "Expand predictive analytics capabilities to forecast key business outcomes.",
+            "Integrate analytics tools into business processes for real-time decision-making.",
+            "Train staff on data-driven decision-making to maximize the value of analytics."
+        ],
+        "next_steps": [
+            "Explore prescriptive analytics to recommend actionable insights.",
+            "Integrate real-time data streams for continuous monitoring."
+        ]
+    },
+    "Managed": {
+        "recommendations": [
+            "Leverage prescriptive analytics to recommend optimal actions.",
+            "Integrate advanced analytics tools into core business functions.",
+            "Focus on real-time data processing and decision-making."
+        ],
+        "next_steps": [
+            "Adopt AI-driven analytics for cognitive insights and self-learning systems.",
+            "Explore autonomous decision-making capabilities."
+        ]
+    },
+    "Optimized": {
+        "recommendations": [
+            "Continuously refine AI and machine learning models for better accuracy.",
+            "Expand autonomous decision-making capabilities across the organization.",
+            "Foster a culture of innovation to explore new analytics use cases."
+        ],
+        "next_steps": [
+            "Stay ahead of industry trends by adopting emerging technologies.",
+            "Focus on scaling AI-driven insights across all business units."
+        ]
+    }
+}
+
+def generate_pdf_report(maturity_level, weighted_avg_score, recommendation, weighted_scores, insights, current_capabilities, recommendations, roadmap):
+    pdf = FPDF()
+    pdf.add_page()
+    
+    # Use a built-in font (e.g., Arial or Helvetica)
+    pdf.set_font("Arial", size=12)
+
+    # Add Virtual Analytics logo (using base64 encoded image)
+    with open("logo.png", "rb") as image_file:
+        encoded_image = base64.b64encode(image_file.read()).decode()
+    
+    # Save the base64 image to a temporary file
+    temp_logo_path = "temp_logo.png"
+    with open(temp_logo_path, "wb") as temp_file:
+        temp_file.write(base64.b64decode(encoded_image))
+    
+    # Add the logo to the PDF
+    pdf.image(temp_logo_path, x=50, w=100)  # Center the logo and set width to 100
+    pdf.ln(20)  # Add some space after the logo
+
+    # Add title
+    pdf.set_font("Arial", "B", 16)  # Bold and larger font for the title
+    pdf.cell(200, 10, txt="The Virtual Narrative: Data Maturity Assessment Report", ln=True, align="C")
+    pdf.ln(10)  # Add some space after the title
+
+    # Add maturity level and score
+    pdf.set_font("Arial", "B", 14)  # Bold for section titles
+    pdf.cell(200, 10, txt="Maturity Level and Score", ln=True)
+    pdf.set_font("Arial", size=12)  # Regular font for content
+    pdf.cell(200, 10, txt=f"Your organization's data maturity level is: {maturity_level.replace('🔴', 'Initial/Ad Hoc').replace('🟠', 'Developing').replace('🟡', 'Defined').replace('🟢', 'Managed').replace('🔵', 'Optimized')}", ln=True)
+    pdf.cell(200, 10, txt=f"Weighted Average Maturity Score: {weighted_avg_score:.2f}/5", ln=True)
+    pdf.cell(200, 10, txt=f"Recommendation: {recommendation}", ln=True)
+    pdf.ln(10)  # Add some space after the section
+
+    # Add weighted scores breakdown
+    pdf.set_font("Arial", "B", 14)  # Bold for section titles
+    pdf.cell(200, 10, txt="Breakdown by Category (Weighted Scores)", ln=True)
+    pdf.set_font("Arial", size=12)  # Regular font for content
+    for category, score in weighted_scores.items():
+        pdf.cell(200, 10, txt=f"{category}: {score:.2f}/5", ln=True)
+    pdf.ln(10)  # Add some space after the section
+
+    # Add AI-driven insights
+    pdf.set_font("Arial", "B", 14)  # Bold for section titles
+    pdf.cell(200, 10, txt="AI-Driven Insights", ln=True)
+    pdf.set_font("Arial", size=12)  # Regular font for content
+    for insight in insights:
+        pdf.multi_cell(200, 10, txt=f"- {insight.replace('🔴', 'Initial/Ad Hoc').replace('🟠', 'Developing').replace('🟡', 'Defined').replace('🟢', 'Managed').replace('🔵', 'Optimized')}", align="L")
+    pdf.ln(10)  # Add some space after the section
+
+    # Add current analytics capabilities
+    pdf.set_font("Arial", "B", 14)  # Bold for section titles
+    if maturity_level in ["🔴 Initial/Ad Hoc", "🟠 Developing"]:
+        pdf.set_text_color(255, 0, 0)  # Red for lower maturity levels
+    else:
+        pdf.set_text_color(0, 128, 0)  # Green for higher maturity levels
+    pdf.cell(200, 10, txt="Current Analytics Capabilities", ln=True)
+    pdf.set_text_color(0, 0, 0)  # Reset to black
+    pdf.set_font("Arial", size=12)  # Regular font for content
+    for capability in current_capabilities["capabilities"]:
+        # Split the capability into type and description
+        capability_type, capability_desc = capability.split(":", 1)
+        pdf.set_font("Arial", "B", 12)  # Bold for capability type
+        pdf.cell(200, 10, txt=f"- {capability_type}:", ln=True)
+        pdf.set_font("Arial", size=12)  # Regular font for description
+        pdf.multi_cell(200, 10, txt=f"  {capability_desc.strip()}", align="L")
+    pdf.cell(200, 10, txt=f"Example: {current_capabilities['example']}", ln=True)
+    pdf.ln(10)  # Add some space after the section
+
+    # Add dynamic recommendations
+    pdf.set_font("Arial", "B", 14)  # Bold for section titles
+    pdf.cell(200, 10, txt="Recommendations for Improvement", ln=True)
+    pdf.set_font("Arial", size=12)  # Regular font for content
+    for rec in recommendations["recommendations"]:
+        pdf.multi_cell(200, 10, txt=f"- {rec}", align="L")
+    pdf.set_font("Arial", "B", 12)  # Bold for subheadings
+    pdf.cell(200, 10, txt="Next Steps:", ln=True)
+    pdf.set_font("Arial", size=12)  # Regular font for content
+    for step in recommendations["next_steps"]:
+        pdf.multi_cell(200, 10, txt=f"- {step}", align="L")
+    pdf.ln(10)  # Add some space after the section
+
+    # Add roadmap
+    pdf.set_font("Arial", "B", 14)  # Bold for section titles
+    pdf.cell(200, 10, txt="Roadmap to Higher Maturity Levels", ln=True)
+    pdf.set_font("Arial", size=12)  # Regular font for content
+    for stage, details in roadmap.items():
+        pdf.set_font("Arial", "B", 12)  # Bold for subheadings
+        pdf.cell(200, 10, txt=f"{stage}:", ln=True)
+        pdf.set_font("Arial", size=12)  # Regular font for content
+        for capability in details["capabilities"]:
+            # Split the capability into type and description
+            capability_type, capability_desc = capability.split(":", 1)
+            pdf.set_font("Arial", "B", 12)  # Bold for capability type
+            pdf.cell(200, 10, txt=f"- {capability_type}:", ln=True)
+            pdf.set_font("Arial", size=12)  # Regular font for description
+            pdf.multi_cell(200, 10, txt=f"  {capability_desc.strip()}", align="L")
+        pdf.cell(200, 10, txt=f"Example: {details['example']}", ln=True)
+    pdf.ln(10)  # Add some space after the section
+
+    # Add a concluding note
+    pdf.set_font("Arial", "I", 12)  # Italic for the concluding note
+    pdf.cell(200, 10, txt="Thank you for using The Virtual Narrative: Data Maturity Assessment Tool!", ln=True, align="C")
+    pdf.ln(10)  # Add some space after the note
+
+    # Add a creative call to action
+    pdf.set_font("Arial", "B", 14)  # Bold for the call to action
+    pdf.set_text_color(0, 0, 255)  # Blue for emphasis
+    pdf.cell(200, 10, txt="Need a Helping Hand Across the Chasm to Data Maturity?", ln=True, align="C")
+    pdf.set_font("Arial", size=12)  # Regular font for content
+    pdf.set_text_color(0, 0, 0)  # Reset to black
+    pdf.cell(200, 10, txt="Embarking on the journey to data maturity can be challenging, but you don't have to do it alone.", ln=True, align="C")
+    pdf.cell(200, 10, txt="Reach out to us for expert guidance and support:", ln=True, align="C")
+    pdf.set_font("Arial", "B", 12)  # Bold for contact details
+    pdf.cell(200, 10, txt="Virtual Analytics", ln=True, align="C")
+    pdf.cell(200, 10, txt="www.virtualanalytics.co.ke | info@virtualanalytics.co.ke", ln=True, align="C")
+    pdf.set_font("Arial", size=12)  # Regular font for content
+    pdf.cell(200, 10, txt="Let us help you unlock the full potential of your data!", ln=True, align="C")
+
+    # Save the PDF
+    pdf.output("data_maturity_report.pdf")
+
 # ✅ Display Data Maturity Score after all sections are completed
 if st.session_state.all_sections_completed:
     # Calculate the weighted average maturity score
@@ -590,5 +816,60 @@ if st.session_state.all_sections_completed:
     })
     for insight in insights:
         st.write(insight)
+
+    # Display Analytics Capabilities for Current Maturity Level
+    st.write("### 📈 Analytics Capabilities at Your Maturity Level")
+    current_capabilities = analytics_capabilities.get(maturity_level.replace("🔴", "").replace("🟠", "").replace("🟡", "").replace("🟢", "").replace("🔵", "").strip())
+    if current_capabilities:
+        st.write(f"#### Current Capabilities:")
+        for capability in current_capabilities["capabilities"]:
+            st.write(f"- {capability}")
+        st.write(f"**Example:** {current_capabilities['example']}")
+    else:
+        st.write("No analytics capabilities found for this maturity level.")
+
+    # Display Dynamic Recommendations
+    st.write("### 🛠️ Recommendations for Improvement")
+    recommendations = dynamic_recommendations.get(maturity_level.replace("🔴", "").replace("🟠", "").replace("🟡", "").replace("🟢", "").replace("🔵", "").strip())
+    if recommendations:
+        st.write(f"#### Recommendations:")
+        for rec in recommendations["recommendations"]:
+            st.write(f"- {rec}")
+        st.write(f"#### Next Steps:")
+        for step in recommendations["next_steps"]:
+            st.write(f"- {step}")
+    else:
+        st.write("No recommendations found for this maturity level.")
+
+    # Display Roadmap for Higher Maturity Levels
+    st.write("### 🛣️ Roadmap to Higher Maturity Levels")
+    st.write("Here’s what you can achieve by progressing to higher stages of data maturity:")
+    for stage, details in analytics_capabilities.items():
+        if stage != maturity_level.replace("🔴", "").replace("🟠", "").replace("🟡", "").replace("🟢", "").replace("🔵", "").strip():
+            st.write(f"#### {stage}")
+            for capability in details["capabilities"]:
+                st.write(f"- {capability}")
+            st.write(f"**Example:** {details['example']}")
+
+    # Add a button to download the PDF report
+    if st.button("Download PDF Report"):
+        generate_pdf_report(
+            maturity_level,
+            weighted_avg_score,
+            recommendation,
+            weighted_scores,
+            insights,
+            current_capabilities,
+            recommendations,
+            {k: v for k, v in analytics_capabilities.items() if k != maturity_level.replace("🔴", "").replace("🟠", "").replace("🟡", "").replace("🟢", "").replace("🔵", "").strip()}
+        )
+        st.success("✅ PDF report generated! Click below to download.")
+        with open("data_maturity_report.pdf", "rb") as file:
+            st.download_button(
+                label="Download Report",
+                data=file,
+                file_name="data_maturity_report.pdf",
+                mime="application/pdf"
+            )
 
     st.success("🎉 Congratulations on completing The Virtual Narrative: Data Maturity Assessment!")
