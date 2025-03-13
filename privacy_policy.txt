@@ -1,0 +1,73 @@
+Virtual Analytics Data Privacy Policy
+Effective Date: Jan 1, 2023
+At Virtual Analytics, we are committed to protecting your privacy and ensuring the security of your personal data. This Data Privacy Policy outlines how we collect, use, store, and protect your information when you use our services, including the Data Maturity Assessment Tool and any other related platforms.
+
+1. Information We Collect
+We collect the following types of information:
+a. Personal Information
+* Name: Your first and last name.
+* Email Address: To communicate with you and send your assessment results.
+* Organization Name: To tailor the assessment to your organization’s context.
+* Business Unit: To understand your role and provide relevant insights.
+b. Assessment Data
+* Responses to the Data Maturity Assessment questions.
+* Scores and insights generated from your responses.
+c. Technical Information
+* IP Address: For security and analytics purposes.
+* Device Information: Such as browser type, operating system, and device type.
+* Usage Data: Such as pages visited, time spent, and interactions with the tool.
+
+2. How We Use Your Information
+We use your information for the following purposes:
+* To Provide Services: To deliver the Data Maturity Assessment and generate personalized reports.
+* To Communicate: To send you your assessment results, updates, and relevant information.
+* To Improve Our Services: To analyze usage patterns and enhance the functionality of our tools.
+* To Ensure Security: To protect against fraud, unauthorized access, and other security risks.
+* For Research Purposes: To compile anonymized, aggregated insights for industry and regional research.
+
+3. Data Sharing and Disclosure
+We do not sell, trade, or rent your personal information to third parties. However, we may share your information in the following circumstances:
+* With Your Consent: If you explicitly agree to share your information with a third party.
+* For Legal Compliance: To comply with applicable laws, regulations, or legal processes.
+* With Service Providers: To trusted third-party vendors who assist us in delivering our services (e.g., cloud hosting, email delivery). These providers are contractually obligated to protect your data.
+
+4. Data Security
+We take data security seriously and implement industry-standard measures to protect your information, including:
+* Encryption: Data is encrypted during transmission and storage.
+* Access Controls: Only authorized personnel have access to your data.
+* Regular Audits: We conduct regular security audits to ensure compliance with best practices.
+
+5. Data Retention
+We retain your personal information only for as long as necessary to fulfill the purposes outlined in this policy or as required by law. Once no longer needed, your data is securely deleted or anonymized.
+
+6. Your Rights
+You have the following rights regarding your personal data:
+* Access: You can request a copy of the personal data we hold about you.
+* Correction: You can request corrections to inaccurate or incomplete data.
+* Deletion: You can request the deletion of your personal data, subject to legal obligations.
+* Objection: You can object to the processing of your data for specific purposes.
+* Withdraw Consent: If processing is based on consent, you can withdraw it at any time.
+To exercise these rights, please contact us at info@virtualanalytics.co.ke.
+
+7. International Data Transfers
+If your data is transferred outside your country of residence, we ensure it is protected by appropriate safeguards, such as standard contractual clauses or adequacy decisions.
+
+8. Changes to This Policy
+We may update this policy from time to time to reflect changes in our practices or legal requirements. We will notify you of any significant changes and post the updated policy on our website.
+
+9. Contact Us
+If you have any questions or concerns about this policy or our data practices, please contact us at:
+Virtual Analytics
+Email: info@virtualanalytics.co.ke
+Phone: +254 705 008 008
+Address: 2nd Floor, Procmura Centre, Westlands, Nairobi, Kenya
+
+10. Consent
+By using our services, you consent to the collection, use, and sharing of your information as described in this policy.
+
+Annex: Definitions
+* Personal Data: Any information that can directly or indirectly identify an individual.
+* Processing: Any operation performed on personal data, such as collection, storage, or analysis.
+* Data Controller: The entity responsible for determining how and why personal data is processed (Virtual Analytics).
+
+
