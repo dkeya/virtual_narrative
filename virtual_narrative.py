@@ -5,7 +5,6 @@ import re  # For extracting numeric scores
 from fpdf import FPDF  # For generating PDF reports
 import os  # For file path handling
 
-
 # ✅ Function to Extract Numeric Scores from Responses
 def extract_score(response):
     """
@@ -17,7 +16,6 @@ def extract_score(response):
     """
     match = re.search(r"\((\d+)\)", response)  # Look for a number inside parentheses
     return int(match.group(1)) if match else 1  # Default to 1 if no match
-
 
 # ✅ Function to Create Gauge Chart
 def create_gauge_chart(score):
@@ -56,6 +54,15 @@ def create_gauge_chart(score):
 # ✅ Set page configuration to wide mode (MUST be the first Streamlit command)
 st.set_page_config(page_title="The Virtual Narrative", page_icon="🌐", layout="wide")
 
+# ✅ Hide code (for deployed tool)
+hide_code = """
+    <style>
+        .reportview-container .main .block-container {
+            display: none;
+        }
+    </style>
+"""
+st.markdown(hide_code, unsafe_allow_html=True)
 
 # ✅ Initialize Session State Variables (Only Once)
 session_defaults = {
@@ -92,11 +99,9 @@ for key, value in session_defaults.items():
     if key not in st.session_state:
         st.session_state[key] = value
 
-
 # ✅ Open the image file and encode it as base64
 with open("logo.png", "rb") as image_file:
     encoded_image = base64.b64encode(image_file.read()).decode()
-
 
 # ✅ Add centered content using markdown (with background color)
 st.markdown(
