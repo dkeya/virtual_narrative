@@ -1,68 +1,86 @@
 import streamlit as st
-import base64  # For base64 encoding
-import plotly.graph_objects as go  # For the gauge chart
-import re  # For extracting numeric scores
-from fpdf import FPDF  # For generating PDF reports
-import os  # For file path handling
-
+import base64
+import plotly.graph_objects as go
+import re
+from fpdf import FPDF
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
+import os
 
 # ✅ Function to Extract Numeric Scores from Responses
 def extract_score(response):
-    """
-    Extract numeric score from the selected response.
-    Args:
-        response (str): The response string containing a score in parentheses.
-    Returns:
-        int: The extracted score or 1 if no match is found.
-    """
-    match = re.search(r"\((\d+)\)", response)  # Look for a number inside parentheses
-    return int(match.group(1)) if match else 1  # Default to 1 if no match
-
+    """Extract numeric score from the selected response."""
+    match = re.search(r"\((\d+)\)", response)
+    return int(match.group(1)) if match else 1
 
 # ✅ Function to Create Gauge Chart
 def create_gauge_chart(score):
-    """
-    Create a gauge chart for the data maturity score.
-    Args:
-        score (float): The data maturity score (between 1 and 5).
-    Returns:
-        plotly.graph_objects.Figure: The gauge chart figure.
-    """
+    """Create a gauge chart for the data maturity score."""
     fig = go.Figure(go.Indicator(
         mode="gauge+number+delta",
         value=score,
         title={'text': "Your Data Maturity Score", 'font': {'size': 24}},
-        gauge={
-            'axis': {'range': [None, 5]},
-            'bar': {'color': "orange"},
-            'steps': [
-                {'range': [0, 1.5], 'color': "red"},
-                {'range': [1.5, 2.5], 'color': "orange"},
-                {'range': [2.5, 3.5], 'color': "yellow"},
-                {'range': [3.5, 4.5], 'color': "green"},
-                {'range': [4.5, 5], 'color': "blue"}
-            ],
-            'threshold': {
-                'line': {'color': "black", 'width': 4},
-                'thickness': 0.75,
-                'value': score
-            }
+        gauge={'axis': {'range': [None, 5]},
+               'bar': {'color': "orange"},
+               'steps': [
+                   {'range': [0, 1.5], 'color': "red"},
+                   {'range': [1.5, 2.5], 'color': "orange"},
+                   {'range': [2.5, 3.5], 'color': "yellow"},
+                   {'range': [3.5, 4.5], 'color': "green"},
+                   {'range': [4.5, 5], 'color': "blue"}],
+               'threshold': {
+                   'line': {'color': "black", 'width': 4},
+                   'thickness': 0.75,
+                   'value': score}
         }
     ))
     fig.update_layout(width=500, height=300)
     return fig
 
+# ✅ Function to Send Email with PDF Attachment
+def send_email_with_pdf(receiver_email, pdf_path):
+    """Send an email with the PDF report attached."""
+    sender_email = "your_email@gmail.com"  # Replace with your email
+    sender_password = "your_password"  # Replace with your email password
+
+    # Create the email
+    msg = MIMEMultipart()
+    msg["From"] = sender_email
+    msg["To"] = receiver_email
+    msg["Subject"] = "Your Data Maturity Assessment Report"
+
+    # Attach the PDF
+    with open(pdf_path, "rb") as attachment:
+        part = MIMEBase("application", "octet-stream")
+        part.set_payload(attachment.read())
+        encoders.encode_base64(part)
+        part.add_header(
+            "Content-Disposition",
+            f"attachment; filename={os.path.basename(pdf_path)}",
+        )
+        msg.attach(part)
+
+    # Send the email
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, receiver_email, msg.as_string())
+        st.success("📧 Email sent successfully! Check your inbox.")
+    except Exception as e:
+        st.error(f"Failed to send email: {e}")
 
 # ✅ Set page configuration to wide mode (MUST be the first Streamlit command)
 st.set_page_config(page_title="The Virtual Narrative", page_icon="🌐", layout="wide")
-
 
 # ✅ Initialize Session State Variables (Only Once)
 session_defaults = {
     "start_assessment": False,
     "data_privacy_accepted": False,
     "user_info_complete": False,
-    "dynamic_weights_set": False,  # Track if dynamic weights are set
+    "dynamic_weights_set": False,
     "data_governance_complete": False,
     "data_quality_complete": False,
     "metadata_management_complete": False,
@@ -70,7 +88,7 @@ session_defaults = {
     "data_analytics_complete": False,
     "data_security_complete": False,
     "all_sections_completed": False,
-    "weights": {  # Default weights (will be updated dynamically)
+    "weights": {
         "Data Governance": 0.20,
         "Data Quality": 0.20,
         "Metadata Management": 0.15,
@@ -84,29 +102,25 @@ session_defaults = {
     "di1_response": " (1)", "di2_response": " (1)", "di3_response": " (1)",
     "ai1_response": " (1)", "ai2_response": " (1)", "ai3_response": " (1)",
     "sp1_response": " (1)", "sp2_response": " (1)", "sp3_response": " (1)",
-    "current_question": 1  # Track the current question in a section
+    "current_question": 1
 }
-
-# Initialize session state variables if they don't exist
 for key, value in session_defaults.items():
     if key not in st.session_state:
         st.session_state[key] = value
-
 
 # ✅ Open the image file and encode it as base64
 with open("logo.png", "rb") as image_file:
     encoded_image = base64.b64encode(image_file.read()).decode()
 
-
-# ✅ Add centered content using markdown (with background color)
+# ✅ Add background color and center the content using markdown
 st.markdown(
     f"""
     <style>
     .top-page {{
-        background-color: #1e2a47;  /* Set background color */
+        background-color: #1e2a47;
         padding: 50px;
         text-align: center;
-        color: white;  /* Changed text color to white for better contrast */
+        color: white;
         position: relative;
     }}
     .top-page h1 {{
@@ -115,189 +129,133 @@ st.markdown(
     .top-page p {{
         font-size: 18px;
     }}
-    .center-button {{
-        display: flex;
-        justify-content: center;
-        margin-top: 20px;  /* Add some space above the button */
-    }}
-    .stButton button {{
-        background-color: #FFA500;  /* Orange background */
-        color: white;  /* White text */
+    .start-button {{
+        position: absolute;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #FFA500;
+        color: white;
         font-size: 20px;
         padding: 15px 30px;
         border-radius: 5px;
         cursor: pointer;
         border: none;
     }}
-    .stButton button:hover {{
-        background-color: #ff8c00;  /* Darker orange on hover */
+    .start-button:hover {{
+        background-color: #ff8c00;
     }}
     </style>
     <div class="top-page">
         <img src="data:image/png;base64,{encoded_image}" width="250" style="display:block; margin-left:auto; margin-right:auto;">
         <h1>Welcome to The Virtual Narrative</h1>
         <p>Complete this Data Maturity Assessment to understand your organization's data maturity level.<br>
-        Grab a cup of coffee ☕, pull up a chair, and let's dive into the world of data management!</p>
+        Grab a coffee ☕ or a beer 🍺, pull up a chair, and let's dive into the world of data management!</p>
         <p>⏳ Takes 7+ minutes</p>
-        <div class="center-button">
-            <!-- Streamlit button will be injected here -->
-        </div>
+        <button class="start-button" onclick="window.location.reload();">Let's do this!</button>
     </div>
     """, unsafe_allow_html=True
 )
 
-# ✅ Add the Streamlit button inside the centered div
-st.markdown('<div class="center-button">', unsafe_allow_html=True)
-if st.button("Let's do this!", key="start_button"):
+# ✅ Handle button click for starting the assessment and navigating to the next page
+if st.button("Let's do this!"):
     st.session_state.start_assessment = True
-    st.session_state.data_privacy_accepted = False  # Set this flag to False when starting
-    st.success("Great! Let's begin your Data Maturity Assessment, but first a word on Data Privacy and protection.")
-st.markdown('</div>', unsafe_allow_html=True)
-
+    st.session_state.data_privacy_accepted = False
+    st.success("Great! Let's begin your Data Maturity Assessment.")
 
 # ✅ Data Privacy & Protection Page (Page 2)
 if st.session_state.start_assessment and not st.session_state.data_privacy_accepted:
     st.write("## Data Privacy & Protection")
     st.write("""
-        We take your Data Privacy seriously. 
-        The data you share with us will be treated as though it were our own. We will use this information 
-        solely to provide you with a bespoke report with actionable insights into your current state of 
-        Data Maturity, alongside suggestions on how you can improve. Over time, we will compile research 
-        findings for industries and regions, but these will be completely anonymized. 
-        [Read our full Privacy Policy below](#privacy-policy).
+        Before we begin - a word on Data Privacy and Protection. We take your Data Privacy seriously. The data you share with us will be treated as though it were our own.
+        We will use this information solely to provide you with a bespoke report with actionable insights into your current state of Data Maturity, alongside suggestions on how you can improve.
+        Over time, we will compile research findings for industries and regions, but these will be completely anonymized.
     """)
-
-    # Add a button to display the Privacy Policy
-    if st.button("View Privacy Policy"):
-        try:
-            # Get the absolute path to the file
-            file_path = os.path.join(os.path.dirname(__file__), "privacy_policy.txt")
-            with open(file_path, "r") as file:
-                privacy_policy_content = file.read()
-            st.markdown(privacy_policy_content, unsafe_allow_html=True)
-        except FileNotFoundError:
-            st.error("Privacy Policy file not found. Please ensure 'privacy_policy.txt' is in the correct directory.")
-
     if st.button("Continue"):
-        st.session_state.data_privacy_accepted = True  # Proceed to next section when the button is clicked
-        st.success("Alright, Lets get started! 😎 Just a couple of quick details so we can personalize your experience.")
+        st.session_state.data_privacy_accepted = True
 
 # ✅ User Information Collection Page (Page 3)
 if st.session_state.data_privacy_accepted and not st.session_state.user_info_complete:
     st.write("### 📝 Let's get started by knowing you!")
-    
-    # Use temporary variables to store user inputs
-    first_name = st.text_input("Enter your First Name:", key="user_first_name_input")
-    last_name = st.text_input("Enter your Last Name:", key="user_last_name_input")
-    email = st.text_input("Enter your Email Address:", key="user_email_input")
-    org_name = st.text_input("Enter your Organization Name:", key="user_org_name_input")
-    business_unit = st.text_input("Which Business Unit do you work in?", key="user_business_unit_input")
+    first_name = st.text_input("Enter your First Name:", key="user_first_name")
+    last_name = st.text_input("Enter your Last Name:", key="user_last_name")
+    email = st.text_input("Enter your Email Address:", key="user_email")
+    org_name = st.text_input("Enter your Organization Name:", key="user_org_name")
+    business_unit = st.text_input("Which Business Unit do you work in?", key="user_business_unit")
 
     if st.button("Start Assessment"):
         if not first_name or not last_name or not email:
             st.error("⚠️ Please fill in all required fields!")
         else:
-            # Store user information in session state (using separate keys)
-            st.session_state.user_first_name = first_name
-            st.session_state.user_last_name = last_name
-            st.session_state.user_email = email
-            st.session_state.user_org_name = org_name
-            st.session_state.user_business_unit = business_unit
-
             st.session_state.user_info_complete = True
-            st.success(f"Thanks, {first_name}! Nice to meet you!. Let's make this assessment even more personalized 🔥. How important are each of these data practices to your organization? 🤔")
-         
+            st.success(f"Great, {first_name}! Let's begin your Data Maturity Assessment.")
 
 # ✅ Dynamic Weighting Section
 if st.session_state.user_info_complete and not st.session_state.dynamic_weights_set:
-    st.write("## ⚖️ Weighting Your Priorities")
-    st.write("On a scale of 0-5 (ascending priority), relative to the others, how do you prioritize the following **six pillars of data maturity** to your organization: **1) Governance, 2) Quality, 3) Metadata, 4) Integration, 5) Analytics, and 6) Security?**")
-    st.write("**0 = Not Important | 5 = Extremely Important**")
+    st.write("## ⚖️ Dynamic Weighting")
+    st.write("This section helps us understand your organization's priorities to tailor the assessment.")
 
-    # Define the questions and their options
-    questions = [
-        {
-            "question": "1️⃣ How important is it for your organization to have clear **data governance** policies, including ownership and accountability?",
-            "options": ["Not Important (1)", "Slightly Important (2)", "Moderately Important (3)", "Very Important (4)", "Extremely Important (5)"]
-        },
-        {
-            "question": "2️⃣ How critical is **data quality**—ensuring accuracy and completeness—for your organization's decision-making?",
-            "options": ["Not Critical (1)", "Slightly Critical (2)", "Moderately Critical (3)", "Very Critical (4)", "Extremely Critical (5)"]
-        },
-        {
-            "question": "3️⃣ How important is **metadata management**, such as maintaining a centralized metadata repository, for your organization?",
-            "options": ["Not Important (1)", "Slightly Important (2)", "Moderately Important (3)", "Very Important (4)", "Extremely Important (5)"]
-        },
-        {
-            "question": "4️⃣ How important is **data integration**, ensuring seamless connectivity across different systems, for your organization?",
-            "options": ["Not Important (1)", "Slightly Important (2)", "Moderately Important (3)", "Very Important (4)", "Extremely Important (5)"]
-        },
-        {
-            "question": "5️⃣ How important is leveraging **data analytics and AI** for decision-making in your organization?",
-            "options": ["Not Important (1)", "Slightly Important (2)", "Moderately Important (3)", "Very Important (4)", "Extremely Important (5)"]
-        },
-        {
-            "question": "6️⃣ How important is **data security**, including compliance with regulations, for your organization?",
-            "options": ["Not Important (1)", "Slightly Important (2)", "Moderately Important (3)", "Very Important (4)", "Extremely Important (5)"]
+    governance_score = st.radio("1️⃣ **How important is it for your organization to have clear data ownership and accountability?**",
+                                ["Not Important (1)",
+                                 "Slightly Important (2)",
+                                 "Moderately Important (3)",
+                                 "Very Important (4)",
+                                 "Extremely Important (5)"], key="gov_weight")
+    quality_score = st.radio("2️⃣ **How critical is data accuracy and completeness for your organization's decision-making?**",
+                             ["Not Critical (1)",
+                              "Slightly Critical (2)",
+                              "Moderately Critical (3)",
+                              "Very Critical (4)",
+                              "Extremely Critical (5)"], key="dq_weight")
+    metadata_score = st.radio("3️⃣ **How important is it for your organization to have a centralized metadata repository?**",
+                              ["Not Important (1)",
+                               "Slightly Important (2)",
+                               "Moderately Important (3)",
+                               "Very Important (4)",
+                               "Extremely Important (5)"], key="mm_weight")
+    integration_score = st.radio("4️⃣ **How important is seamless data integration across different systems for your organization?**",
+                                 ["Not Important (1)",
+                                  "Slightly Important (2)",
+                                  "Moderately Important (3)",
+                                  "Very Important (4)",
+                                  "Extremely Important (5)"], key="di_weight")
+    analytics_score = st.radio("5️⃣ **How important is leveraging data analytics and AI for decision-making in your organization?**",
+                               ["Not Important (1)",
+                                "Slightly Important (2)",
+                                "Moderately Important (3)",
+                                "Very Important (4)",
+                                "Extremely Important (5)"], key="ai_weight")
+    security_score = st.radio("6️⃣ **How important is ensuring data security and compliance with regulations for your organization?**",
+                              ["Not Important (1)",
+                               "Slightly Important (2)",
+                               "Moderately Important (3)",
+                               "Very Important (4)",
+                               "Extremely Important (5)"], key="sp_weight")
+
+    if st.button("Set Weights"):
+        governance_score = extract_score(governance_score)
+        quality_score = extract_score(quality_score)
+        metadata_score = extract_score(metadata_score)
+        integration_score = extract_score(integration_score)
+        analytics_score = extract_score(analytics_score)
+        security_score = extract_score(security_score)
+
+        total_score = governance_score + quality_score + metadata_score + integration_score + analytics_score + security_score
+
+        st.session_state.weights = {
+            "Data Governance": governance_score / total_score,
+            "Data Quality": quality_score / total_score,
+            "Metadata Management": metadata_score / total_score,
+            "Data Integration": integration_score / total_score,
+            "Data Analytics & AI": analytics_score / total_score,
+            "Data Security & Privacy": security_score / total_score
         }
-    ]
 
-    # Track the current question
-    if "current_question_index" not in st.session_state:
-        st.session_state.current_question_index = 0
-
-    # Display the current question
-    current_question = questions[st.session_state.current_question_index]
-    st.write(f"### {current_question['question']}")
-    response = st.radio("Select your response:", current_question["options"], key=f"q{st.session_state.current_question_index}")
-
-    # Add buttons for navigation
-    button_container = st.container()  # Use a container for buttons
-
-    with button_container:
-        # Back button (only show if not on the first question)
-        if st.session_state.current_question_index > 0:
-            if st.button("⬅️ Back", key=f"back_{st.session_state.current_question_index}"):
-                st.session_state.current_question_index -= 1
-                st.rerun()  # Force a rerun to update the question
-
-        # Next button (only show if not on the last question)
-        if st.session_state.current_question_index < len(questions) - 1:
-            if st.button("Next ➡️", key=f"next_{st.session_state.current_question_index}"):
-                # Save the response
-                st.session_state[f"q{st.session_state.current_question_index}_response"] = response
-                st.session_state.current_question_index += 1
-                st.rerun()  # Force a rerun to update the question
-        else:
-            if st.button("Submit", key="submit_dynamic_weighting"):
-                # Save the response
-                st.session_state[f"q{st.session_state.current_question_index}_response"] = response
-
-                # Extract scores from responses
-                scores = []
-                for i in range(len(questions)):
-                    response = st.session_state.get(f"q{i}_response", " (1)")
-                    score = extract_score(response)
-                    scores.append(score)
-
-                # Calculate total score
-                total_score = sum(scores)
-
-                # Assign weights
-                st.session_state.weights = {
-                    "Data Governance": scores[0] / total_score,
-                    "Data Quality": scores[1] / total_score,
-                    "Metadata Management": scores[2] / total_score,
-                    "Data Integration": scores[3] / total_score,
-                    "Data Analytics & AI": scores[4] / total_score,
-                    "Data Security & Privacy": scores[5] / total_score
-                }
-
-                st.session_state.dynamic_weights_set = True
-                st.success(f"Awesome work, {st.session_state.user_first_name}! – Weights set!✅ You’ve made it to the Data Governance section 🔐. Lets see how well your organization is managing data ownership and accountability")
+        st.session_state.dynamic_weights_set = True
+        st.success("✅ Weights set! Moving to the next section.")
 
 # ✅ Track Completion Progress
-total_sections = 6  # Total number of assessment sections
+total_sections = 6
 def calculate_progress():
     completed = sum([
         st.session_state.data_governance_complete,
@@ -312,13 +270,13 @@ def calculate_progress():
 # Show progress bar only after the assessment has started
 if st.session_state.start_assessment:
     progress = calculate_progress()
-    st.progress(progress)  # Show progress bar
+    st.progress(progress)
     st.write(f"🟢 **Progress: {progress}% Complete**")
 
 # 🏛️ **SECTION 1: DATA GOVERNANCE**
 if st.session_state.dynamic_weights_set and not st.session_state.data_governance_complete:
     st.write("## 🏛️ Section 1: Data Governance")
-    st.write(f"This section assesses how well data governance is established in your organization.")
+    st.write("This section assesses how well data governance is established in your organization.")
 
     if st.session_state.current_question == 1:
         gov_q1 = st.radio("1️⃣ **Does your organization have a formal Data Governance policy?**",
@@ -327,13 +285,9 @@ if st.session_state.dynamic_weights_set and not st.session_state.data_governance
                            "Formal governance in place, but not consistently followed (3)",
                            "Governance is standardized and monitored (4)",
                            "Governance is automated, AI-driven, and continuously optimized (5)"], key="gov_q1")
-        
-        button_container = st.container()
-        with button_container:
-            if st.button("Next ➡️", key="gov_q1_next"):
-                st.session_state.gov_q1_response = gov_q1
-                st.session_state.current_question = 2
-                st.rerun()
+        if st.button("Next"):
+            st.session_state.gov_q1_response = gov_q1
+            st.session_state.current_question = 2
 
     elif st.session_state.current_question == 2:
         gov_q2 = st.radio("2️⃣ **Are roles and responsibilities clearly defined? (e.g., Data Stewards, Chief Data Officer)?**",
@@ -342,16 +296,9 @@ if st.session_state.dynamic_weights_set and not st.session_state.data_governance
                            "Defined roles exist, but accountability is weak (3)",
                            "Roles are well-defined and monitored (4)",
                            "Governance roles are optimized and continuously improved (5)"], key="gov_q2")
-        
-        button_container = st.container()
-        with button_container:
-            if st.button("⬅️ Back", key="gov_q2_back"):
-                st.session_state.current_question = 1
-                st.rerun()
-            if st.button("Next ➡️", key="gov_q2_next"):
-                st.session_state.gov_q2_response = gov_q2
-                st.session_state.current_question = 3
-                st.rerun()
+        if st.button("Next"):
+            st.session_state.gov_q2_response = gov_q2
+            st.session_state.current_question = 3
 
     elif st.session_state.current_question == 3:
         gov_q3 = st.radio("3️⃣ **How frequently is your Data Governance policy reviewed and updated?**",
@@ -360,23 +307,16 @@ if st.session_state.dynamic_weights_set and not st.session_state.data_governance
                            "Reviewed every few years (3)",
                            "Reviewed annually (4)",
                            "Continuously improved with data-driven feedback (5)"], key="gov_q3")
-        
-        button_container = st.container()
-        with button_container:
-            if st.button("⬅️ Back", key="gov_q3_back"):
-                st.session_state.current_question = 2
-                st.rerun()
-            if st.button("Submit Governance Responses", key="gov_q3_submit"):
-                st.session_state.gov_q3_response = gov_q3
-                st.session_state.data_governance_complete = True
-                st.session_state.current_question = 1  # Reset for the next section
-                st.success(f"Awesome work, {st.session_state.user_first_name}! – On to Data Quality! 📊 How do you ensure that your data is accurate, complete and consistent? Let’s dig in, David")
-
+        if st.button("Submit Governance Responses"):
+            st.session_state.gov_q3_response = gov_q3
+            st.session_state.data_governance_complete = True
+            st.session_state.current_question = 1
+            st.success("✅ Responses recorded! Moving to the next section.")
 
 # 📊 **SECTION 2: DATA QUALITY**
 if st.session_state.data_governance_complete and not st.session_state.data_quality_complete:
     st.write("## 📊 Section 2: Data Quality")
-    st.write(f"This section evaluates how well your organization maintains accurate, complete, and reliable data.**")
+    st.write("This section evaluates how well your organization maintains **accurate, complete, and reliable data**.")
 
     if st.session_state.current_question == 1:
         dq1 = st.radio("1️⃣ **How does your organization ensure data accuracy?**",
@@ -385,13 +325,9 @@ if st.session_state.data_governance_complete and not st.session_state.data_quali
                         "Defined validation rules (3)",
                         "Automated quality checks (4)",
                         "AI-powered real-time monitoring (5)"], key="dq1")
-        
-        button_container = st.container()
-        with button_container:
-            if st.button("Next ➡️", key="dq1_next"):
-                st.session_state.dq1_response = dq1
-                st.session_state.current_question = 2
-                st.rerun()
+        if st.button("Next"):
+            st.session_state.dq1_response = dq1
+            st.session_state.current_question = 2
 
     elif st.session_state.current_question == 2:
         dq2 = st.radio("2️⃣ **How is data completeness ensured in your organization?**",
@@ -400,16 +336,9 @@ if st.session_state.data_governance_complete and not st.session_state.data_quali
                         "Automated missing value checks (3)",
                         "Proactive data validation (4)",
                         "Machine learning-driven data integrity (5)"], key="dq2")
-        
-        button_container = st.container()
-        with button_container:
-            if st.button("⬅️ Back", key="dq2_back"):
-                st.session_state.current_question = 1
-                st.rerun()
-            if st.button("Next ➡️", key="dq2_next"):
-                st.session_state.dq2_response = dq2
-                st.session_state.current_question = 3
-                st.rerun()
+        if st.button("Next"):
+            st.session_state.dq2_response = dq2
+            st.session_state.current_question = 3
 
     elif st.session_state.current_question == 3:
         dq3 = st.radio("3️⃣ **How consistently is data updated and synchronized across systems?**",
@@ -418,23 +347,16 @@ if st.session_state.data_governance_complete and not st.session_state.data_quali
                         "Automated scheduled updates (3)",
                         "Real-time data sync (4)",
                         "Self-healing, AI-driven consistency (5)"], key="dq3")
-        
-        button_container = st.container()
-        with button_container:
-            if st.button("⬅️ Back", key="dq3_back"):
-                st.session_state.current_question = 2
-                st.rerun()
-            if st.button("Submit Data Quality Responses", key="dq3_submit"):
-                st.session_state.dq3_response = dq3
-                st.session_state.data_quality_complete = True
-                st.session_state.current_question = 1  # Reset for the next section
-                st.success(f"You’re on fire 🔥 {st.session_state.user_first_name}! Now let’s take a look at how your metadata is being managed and if it’s in a centralized place. 📚")
-
+        if st.button("Submit Data Quality Responses"):
+            st.session_state.dq3_response = dq3
+            st.session_state.data_quality_complete = True
+            st.session_state.current_question = 1
+            st.success("✅ Data Quality responses submitted! Moving to Metadata Management.")
 
 # 🏷 **SECTION 3: METADATA MANAGEMENT**
 if st.session_state.data_quality_complete and not st.session_state.metadata_management_complete:
     st.write("## 🏷 Section 3: Metadata Management")
-    st.write(f"This section evaluates how well your organization manages metadata, including data definitions, lineage, and classification.")
+    st.write("This section evaluates how well your organization manages **metadata, including data definitions, lineage, and classification.**")
 
     if st.session_state.current_question == 1:
         mm1 = st.radio("1️⃣ **Does your organization maintain a centralized metadata repository?**",
@@ -443,13 +365,9 @@ if st.session_state.data_quality_complete and not st.session_state.metadata_mana
                         "A structured metadata catalog is available (3)",
                         "A centralized metadata repository is maintained (4)",
                         "Fully automated metadata management with AI-driven lineage tracking (5)"], key="mm1")
-        
-        button_container = st.container()
-        with button_container:
-            if st.button("Next ➡️", key="mm1_next"):
-                st.session_state.mm1_response = mm1
-                st.session_state.current_question = 2
-                st.rerun()
+        if st.button("Next"):
+            st.session_state.mm1_response = mm1
+            st.session_state.current_question = 2
 
     elif st.session_state.current_question == 2:
         mm2 = st.radio("2️⃣ **How well-defined and standardized are your data definitions?**",
@@ -458,16 +376,9 @@ if st.session_state.data_quality_complete and not st.session_state.metadata_mana
                         "Standardized definitions exist but not enforced (3)",
                         "Organization-wide metadata standards are enforced (4)",
                         "AI-driven metadata governance ensures full compliance (5)"], key="mm2")
-        
-        button_container = st.container()
-        with button_container:
-            if st.button("⬅️ Back", key="mm2_back"):
-                st.session_state.current_question = 1
-                st.rerun()
-            if st.button("Next ➡️", key="mm2_next"):
-                st.session_state.mm2_response = mm2
-                st.session_state.current_question = 3
-                st.rerun()
+        if st.button("Next"):
+            st.session_state.mm2_response = mm2
+            st.session_state.current_question = 3
 
     elif st.session_state.current_question == 3:
         mm3 = st.radio("3️⃣ **How is data lineage tracked in your organization?**",
@@ -476,23 +387,16 @@ if st.session_state.data_quality_complete and not st.session_state.metadata_mana
                         "Automated lineage tracking for some systems (3)",
                         "Comprehensive automated lineage tracking (4)",
                         "AI-driven lineage tracking with real-time anomaly detection (5)"], key="mm3")
-        
-        button_container = st.container()
-        with button_container:
-            if st.button("⬅️ Back", key="mm3_back"):
-                st.session_state.current_question = 2
-                st.rerun()
-            if st.button("Submit Metadata Management Responses", key="mm3_submit"):
-                st.session_state.mm3_response = mm3
-                st.session_state.metadata_management_complete = True
-                st.session_state.current_question = 1  # Reset for the next section
-                st.success(f"That was easy, right? Great job {st.session_state.user_first_name}! Moving on to Data Integration 🔗! Is your data flowing seamlessly across systems?")
-
+        if st.button("Submit Metadata Management Responses"):
+            st.session_state.mm3_response = mm3
+            st.session_state.metadata_management_complete = True
+            st.session_state.current_question = 1
+            st.success("✅ Metadata Management responses submitted! Moving to Data Integration.")
 
 # 🔗 **SECTION 4: DATA INTEGRATION**
 if st.session_state.metadata_management_complete and not st.session_state.data_integration_complete:
     st.write("## 🔗 Section 4: Data Integration")
-    st.write(f"This section evaluates how well data is integrated across your organization, ensuring seamless interoperability.")
+    st.write("This section evaluates how well data is integrated across your organization, ensuring seamless interoperability.")
 
     if st.session_state.current_question == 1:
         di1 = st.radio("1️⃣ **How does your organization handle data integration between different systems?**",
@@ -501,13 +405,9 @@ if st.session_state.metadata_management_complete and not st.session_state.data_i
                         "Basic ETL processes in place (3)",
                         "Automated API-based data flows (4)",
                         "Real-time AI-driven integration across platforms (5)"], key="di1")
-        
-        button_container = st.container()
-        with button_container:
-            if st.button("Next ➡️", key="di1_next"):
-                st.session_state.di1_response = di1
-                st.session_state.current_question = 2
-                st.rerun()
+        if st.button("Next"):
+            st.session_state.di1_response = di1
+            st.session_state.current_question = 2
 
     elif st.session_state.current_question == 2:
         di2 = st.radio("2️⃣ **How frequently does your organization update and synchronize data across different platforms?**",
@@ -516,16 +416,9 @@ if st.session_state.metadata_management_complete and not st.session_state.data_i
                         "Automated updates on a scheduled basis (3)",
                         "Near real-time synchronization (4)",
                         "AI-driven, self-healing data synchronization (5)"], key="di2")
-        
-        button_container = st.container()
-        with button_container:
-            if st.button("⬅️ Back", key="di2_back"):
-                st.session_state.current_question = 1
-                st.rerun()
-            if st.button("Next ➡️", key="di2_next"):
-                st.session_state.di2_response = di2
-                st.session_state.current_question = 3
-                st.rerun()
+        if st.button("Next"):
+            st.session_state.di2_response = di2
+            st.session_state.current_question = 3
 
     elif st.session_state.current_question == 3:
         di3 = st.radio("3️⃣ **Does your organization utilize cloud-based data integration platforms?**",
@@ -534,23 +427,16 @@ if st.session_state.metadata_management_complete and not st.session_state.data_i
                         "Some cloud integration but no automation (3)",
                         "Fully automated cloud-based integration (4)",
                         "AI-optimized multi-cloud integration (5)"], key="di3")
-        
-        button_container = st.container()
-        with button_container:
-            if st.button("⬅️ Back", key="di3_back"):
-                st.session_state.current_question = 2
-                st.rerun()
-            if st.button("Submit Data Integration Responses", key="di3_submit"):
-                st.session_state.di3_response = di3
-                st.session_state.data_integration_complete = True
-                st.session_state.current_question = 1  # Reset for the next section
-                st.success(f"Awesome work, {st.session_state.user_first_name}! You're almost halfway there! 🤖 Time to explore how well you're using analytics and AI to make decisions.")
-
+        if st.button("Submit Data Integration Responses"):
+            st.session_state.di3_response = di3
+            st.session_state.data_integration_complete = True
+            st.session_state.current_question = 1
+            st.success("✅ Data Integration responses submitted! Moving to Data Analytics & AI.")
 
 # 📊 **SECTION 5: DATA ANALYTICS & AI**
 if st.session_state.data_integration_complete and not st.session_state.data_analytics_complete:
     st.write("## 📊 Section 5: Data Analytics & AI")
-    st.write(f"This section assesses your organization's ability to leverage data analytics and AI for decision-making.")
+    st.write("This section assesses your organization's ability to leverage data analytics and AI for decision-making.")
 
     if st.session_state.current_question == 1:
         ai1 = st.radio("1️⃣ **What is the level of adoption of business intelligence and reporting in your organization?**",
@@ -559,13 +445,9 @@ if st.session_state.data_integration_complete and not st.session_state.data_anal
                         "Automated dashboards with static reports (3)",
                         "Interactive BI tools with real-time data (4)",
                         "AI-driven predictive analytics and self-service BI (5)"], key="ai1")
-        
-        button_container = st.container()
-        with button_container:
-            if st.button("Next ➡️", key="ai1_next"):
-                st.session_state.ai1_response = ai1
-                st.session_state.current_question = 2
-                st.rerun()
+        if st.button("Next"):
+            st.session_state.ai1_response = ai1
+            st.session_state.current_question = 2
 
     elif st.session_state.current_question == 2:
         ai2 = st.radio("2️⃣ **How is machine learning used in your organization?**",
@@ -574,16 +456,9 @@ if st.session_state.data_integration_complete and not st.session_state.data_anal
                         "Some predictive models used in decision-making (3)",
                         "Machine learning models are embedded in core processes (4)",
                         "AI-driven automation and decision intelligence across the business (5)"], key="ai2")
-        
-        button_container = st.container()
-        with button_container:
-            if st.button("⬅️ Back", key="ai2_back"):
-                st.session_state.current_question = 1
-                st.rerun()
-            if st.button("Next ➡️", key="ai2_next"):
-                st.session_state.ai2_response = ai2
-                st.session_state.current_question = 3
-                st.rerun()
+        if st.button("Next"):
+            st.session_state.ai2_response = ai2
+            st.session_state.current_question = 3
 
     elif st.session_state.current_question == 3:
         ai3 = st.radio("3️⃣ **How well is AI governance and ethics considered in your organization?**",
@@ -592,23 +467,16 @@ if st.session_state.data_integration_complete and not st.session_state.data_anal
                         "AI policies exist but are inconsistently followed (3)",
                         "AI governance is well-defined and monitored (4)",
                         "AI ethics, bias detection, and compliance are actively managed (5)"], key="ai3")
-        
-        button_container = st.container()
-        with button_container:
-            if st.button("⬅️ Back", key="ai3_back"):
-                st.session_state.current_question = 2
-                st.rerun()
-            if st.button("Submit Data Analytics & AI Responses", key="ai3_submit"):
-                st.session_state.ai3_response = ai3
-                st.session_state.data_analytics_complete = True
-                st.session_state.current_question = 1  # Reset for the next section
-                st.success(f"You’re on fire 🔥 {st.session_state.user_first_name}! Just a few more steps! 🔒 How secure is your data? Let’s make sure everything is locked down.")
-
+        if st.button("Submit Data Analytics & AI Responses"):
+            st.session_state.ai3_response = ai3
+            st.session_state.data_analytics_complete = True
+            st.session_state.current_question = 1
+            st.success("✅ Data Analytics & AI responses submitted! Moving to Data Security & Privacy.")
 
 # 🔒 **SECTION 6: DATA SECURITY & PRIVACY**
 if st.session_state.data_analytics_complete and not st.session_state.data_security_complete:
     st.write("## 🔒 Section 6: Data Security & Privacy")
-    st.write(f"This section evaluates how well your organization ensures data security, privacy, and compliance with regulations.")
+    st.write("This section evaluates how well your organization ensures data security, privacy, and compliance with regulations.")
 
     if st.session_state.current_question == 1:
         sp1 = st.radio("1️⃣ **How is access to sensitive data controlled in your organization?**",
@@ -617,13 +485,9 @@ if st.session_state.data_analytics_complete and not st.session_state.data_securi
                         "Role-based access control (RBAC) in place (3)",
                         "Multi-factor authentication and encryption (4)",
                         "Zero-trust security model with continuous monitoring (5)"], key="sp1")
-        
-        button_container = st.container()
-        with button_container:
-            if st.button("Next ➡️", key="sp1_next"):
-                st.session_state.sp1_response = sp1
-                st.session_state.current_question = 2
-                st.rerun()
+        if st.button("Next"):
+            st.session_state.sp1_response = sp1
+            st.session_state.current_question = 2
 
     elif st.session_state.current_question == 2:
         sp2 = st.radio("2️⃣ **Does your organization comply with data protection regulations (e.g., GDPR, HIPAA, Kenya Data Protection Act)?**",
@@ -632,16 +496,9 @@ if st.session_state.data_analytics_complete and not st.session_state.data_securi
                         "Compliance policies exist but are inconsistently followed (3)",
                         "Fully compliant with regular audits (4)",
                         "Continuous compliance monitoring and automated reporting (5)"], key="sp2")
-        
-        button_container = st.container()
-        with button_container:
-            if st.button("⬅️ Back", key="sp2_back"):
-                st.session_state.current_question = 1
-                st.rerun()
-            if st.button("Next ➡️", key="sp2_next"):
-                st.session_state.sp2_response = sp2
-                st.session_state.current_question = 3
-                st.rerun()
+        if st.button("Next"):
+            st.session_state.sp2_response = sp2
+            st.session_state.current_question = 3
 
     elif st.session_state.current_question == 3:
         sp3 = st.radio("3️⃣ **How well does your organization handle data encryption and secure storage?**",
@@ -650,19 +507,13 @@ if st.session_state.data_analytics_complete and not st.session_state.data_securi
                         "Encryption used for sensitive data (3)",
                         "Industry-standard encryption applied across systems (4)",
                         "End-to-end encryption with automated security updates (5)"], key="sp3")
-        
-        button_container = st.container()
-        with button_container:
-            if st.button("⬅️ Back", key="sp3_back"):
-                st.session_state.current_question = 2
-                st.rerun()
-            if st.button("Submit Data Security & Privacy Responses", key="sp3_submit"):
-                st.session_state.sp3_response = sp3
-                st.session_state.data_security_complete = True
-                st.session_state.current_question = 1  # Reset for the next section
-                st.session_state.all_sections_completed = True  # Mark all sections as completed
-                st.success(f"🎉 Congratulations, {st.session_state.user_first_name}! You've completed the assessment! Here’s how your data maturity looks:")
-            
+        if st.button("Submit Data Security & Privacy Responses"):
+            st.session_state.sp3_response = sp3
+            st.session_state.data_security_complete = True
+            st.session_state.current_question = 1
+            st.success("✅ Data Security & Privacy responses submitted! Assessment complete.")
+            st.session_state.all_sections_completed = True
+
 # ✅ Function to Generate AI-Driven Insights
 def generate_ai_insights(scores):
     """Generate AI-driven insights based on the user's responses."""
@@ -718,7 +569,6 @@ def generate_ai_insights(scores):
 
     return insights
 
-
 # ✅ Define Analytics Capabilities for Each Maturity Stage
 analytics_capabilities = {
     "Initial/Ad Hoc": {
@@ -762,7 +612,6 @@ analytics_capabilities = {
         "example": "Real-time pricing adjustments based on market conditions."
     }
 }
-
 
 # ✅ Define Dynamic Recommendations for Each Maturity Stage
 dynamic_recommendations = {
@@ -823,51 +672,23 @@ dynamic_recommendations = {
     }
 }
 
-
+# ✅ Function to Generate PDF Report
 def generate_pdf_report(maturity_level, weighted_avg_score, recommendation, weighted_scores, insights, current_capabilities, recommendations, roadmap):
     pdf = FPDF()
     pdf.add_page()
-    
+
     # Use a built-in font (e.g., Arial or Helvetica)
     pdf.set_font("Arial", size=12)
 
-    try:
-        # Attempt to open the logo file
-        with open("logo_1.png", "rb") as image_file:
-            encoded_image = base64.b64encode(image_file.read()).decode()
-        
-        # Save the base64 image to a temporary file
-        temp_logo_path = "temp_logo_1.png"
-        with open(temp_logo_path, "wb") as temp_file:
-            temp_file.write(base64.b64decode(encoded_image))
-        
-        # Add the logo to the PDF
-        pdf.image(temp_logo_path, x=50, w=100)  # Center the logo and set width to 100
-        pdf.ln(20)  # Add some space after the logo
-    except FileNotFoundError:
-        st.error("Logo file 'logo_1.png' not found. Please ensure the file is in the correct directory.")
-        return  # Exit the function if the logo file is missing
+    # Add Virtual Analytics logo
+    logo_path = "logo.png"  # Ensure the logo file is in the same directory
+    pdf.image(logo_path, x=50, w=100)  # Center the logo and set width to 100
+    pdf.ln(20)  # Add some space after the logo
 
     # Add title
     pdf.set_font("Arial", "B", 16)  # Bold and larger font for the title
     pdf.cell(200, 10, txt="The Virtual Narrative: Data Maturity Assessment Report", ln=True, align="C")
     pdf.ln(10)  # Add some space after the title
-
-    # Add the introduction paragraph
-    pdf.set_font("Arial", size=12)  # Regular font for content
-    pdf.multi_cell(200, 10, txt="In today’s rapidly evolving digital world, data is not just an asset; it's the backbone of decision-making, strategy, and innovation. Understanding the maturity of your data practices is key to unlocking its full potential. The concept of Data Maturity reflects how well an organization manages, integrates, analyzes, and secures its data. It’s a journey that takes an organization from basic, reactive data handling to a sophisticated, proactive approach where data is seamlessly integrated into decision-making processes.", align="L")
-    pdf.ln(5)  # Add some space
-    pdf.multi_cell(200, 10, txt="The journey through data maturity is often divided into five stages:", align="L")
-    pdf.multi_cell(200, 10, txt="- Initial/Ad Hoc: Where data processes are disjointed and unpredictable.", align="L")
-    pdf.multi_cell(200, 10, txt="- Developing: Where basic processes are established but still lack consistency.", align="L")
-    pdf.multi_cell(200, 10, txt="- Defined: Where standard processes are in place, and data is beginning to drive decisions.", align="L")
-    pdf.multi_cell(200, 10, txt="- Managed: Where data management is more structured, automated, and fully integrated into business processes.", align="L")
-    pdf.multi_cell(200, 10, txt="- Optimized: Where data is fully embedded in decision-making, and advanced analytics and AI continuously improve business outcomes.", align="L")
-    pdf.ln(5)  # Add some space
-    pdf.multi_cell(200, 10, txt="Each stage reflects an organization's growing ability to leverage data to gain insights, optimize operations, and drive innovation. In this assessment, we’ll evaluate where your organization stands on this maturity journey and provide actionable insights to help you advance.", align="L")
-    pdf.ln(5)  # Add some space
-    pdf.multi_cell(200, 10, txt="Now, let’s see where your organization’s data maturity currently stands with the Data Maturity Score, as visualized below in the gauge chart.", align="L")
-    pdf.ln(10)  # Add some space after the introduction
 
     # Add maturity level and score
     pdf.set_font("Arial", "B", 14)  # Bold for section titles
@@ -894,18 +715,12 @@ def generate_pdf_report(maturity_level, weighted_avg_score, recommendation, weig
         pdf.multi_cell(200, 10, txt=f"- {insight.replace('🔴', 'Initial/Ad Hoc').replace('🟠', 'Developing').replace('🟡', 'Defined').replace('🟢', 'Managed').replace('🔵', 'Optimized')}", align="L")
     pdf.ln(10)  # Add some space after the section
 
-    # Add current analytics capabilities with dynamic color
+    # Add current analytics capabilities
     pdf.set_font("Arial", "B", 14)  # Bold for section titles
-    if maturity_level == "🔴 Initial/Ad Hoc":
-        pdf.set_text_color(255, 0, 0)  # Red for Initial/Ad Hoc
-    elif maturity_level == "🟠 Developing":
-        pdf.set_text_color(255, 165, 0)  # Orange for Developing
-    elif maturity_level == "🟡 Defined":
-        pdf.set_text_color(255, 255, 0)  # Yellow for Defined
-    elif maturity_level == "🟢 Managed":
-        pdf.set_text_color(0, 128, 0)  # Green for Managed
-    elif maturity_level == "🔵 Optimized":
-        pdf.set_text_color(0, 0, 255)  # Blue for Optimized
+    if maturity_level in ["🔴 Initial/Ad Hoc", "🟠 Developing"]:
+        pdf.set_text_color(255, 0, 0)  # Red for lower maturity levels
+    else:
+        pdf.set_text_color(0, 128, 0)  # Green for higher maturity levels
     pdf.cell(200, 10, txt="Current Analytics Capabilities", ln=True)
     pdf.set_text_color(0, 0, 0)  # Reset to black
     pdf.set_font("Arial", size=12)  # Regular font for content
@@ -972,29 +787,41 @@ def generate_pdf_report(maturity_level, weighted_avg_score, recommendation, weig
     # Save the PDF
     pdf.output("data_maturity_report.pdf")
 
+# ✅ Function to Send Email with PDF Attachment
+def send_email_with_pdf(receiver_email, pdf_path):
+    """Send an email with the PDF report attached."""
+    sender_email = "your_email@gmail.com"  # Replace with your email
+    sender_password = "your_password"  # Replace with your email password
+
+    # Create the email
+    msg = MIMEMultipart()
+    msg["From"] = sender_email
+    msg["To"] = receiver_email
+    msg["Subject"] = "Your Data Maturity Assessment Report"
+
+    # Attach the PDF
+    with open(pdf_path, "rb") as attachment:
+        part = MIMEBase("application", "octet-stream")
+        part.set_payload(attachment.read())
+        encoders.encode_base64(part)
+        part.add_header(
+            "Content-Disposition",
+            f"attachment; filename={os.path.basename(pdf_path)}",
+        )
+        msg.attach(part)
+
+    # Send the email
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, receiver_email, msg.as_string())
+        st.success("📧 Email sent successfully! Check your inbox.")
+    except Exception as e:
+        st.error(f"Failed to send email: {e}")
 
 # ✅ Display Data Maturity Score after all sections are completed
 if st.session_state.all_sections_completed:
-    # Add the title above the gauge chart
-    st.write("## The Virtual Narrative: Data Maturity Assessment Report")
-    
-    # Add the introduction paragraph with icons
-    st.write("""
-    In today’s rapidly evolving digital world, data is not just an asset; it's the backbone of decision-making, strategy, and innovation. Understanding the maturity of your data practices is key to unlocking its full potential. The concept of **Data Maturity** reflects how well an organization manages, integrates, analyzes, and secures its data. It’s a journey that takes an organization from basic, reactive data handling to a sophisticated, proactive approach where data is seamlessly integrated into decision-making processes.
-
-    The journey through data maturity is often divided into five stages:
-
-    - **🔴 Initial/Ad Hoc**: Where data processes are disjointed and unpredictable.
-    - **🟠 Developing**: Where basic processes are established but still lack consistency.
-    - **🟡 Defined**: Where standard processes are in place, and data is beginning to drive decisions.
-    - **🟢 Managed**: Where data management is more structured, automated, and fully integrated into business processes.
-    - **🔵 Optimized**: Where data is fully embedded in decision-making, and advanced analytics and AI continuously improve business outcomes.
-
-    Each stage reflects an organization's growing ability to leverage data to gain insights, optimize operations, and drive innovation. In this assessment, we’ll evaluate where your organization stands on this maturity journey and provide actionable insights to help you advance.
-
-    Now, let’s see where your organization’s data maturity currently stands with the **Data Maturity Score**, as visualized below in the gauge chart.
-    """)
-    
     # Calculate the weighted average maturity score
     weighted_scores = {
         "Data Governance": extract_score(st.session_state.get("gov_q1_response", " (1)")) * st.session_state.weights["Data Governance"],
@@ -1105,5 +932,9 @@ if st.session_state.all_sections_completed:
                 file_name="data_maturity_report.pdf",
                 mime="application/pdf"
             )
+
+    # Add a button to send the report via email
+    if st.button("Send Report via Email"):
+        send_email_with_pdf(st.session_state.user_email, "data_maturity_report.pdf")
 
     st.success("🎉 Congratulations on completing The Virtual Narrative: Data Maturity Assessment!")
