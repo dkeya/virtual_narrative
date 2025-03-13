@@ -5,6 +5,19 @@ import re  # For extracting numeric scores
 from fpdf import FPDF  # For generating PDF reports
 import os  # For file path handling
 
+# ✅ Set page configuration to wide mode (MUST be the first Streamlit command)
+st.set_page_config(page_title="The Virtual Narrative", page_icon="🌐", layout="wide")
+
+# Hide Default Streamlit Elements
+hide_streamlit_style = """
+    <style>
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        header {visibility: hidden;}
+    </style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
 # ✅ Function to Extract Numeric Scores from Responses
 def extract_score(response):
     """
@@ -49,9 +62,6 @@ def create_gauge_chart(score):
     ))
     fig.update_layout(width=500, height=300)
     return fig
-
-# ✅ Set page configuration to wide mode (MUST be the first Streamlit command)
-st.set_page_config(page_title="The Virtual Narrative", page_icon="🌐", layout="wide")
 
 # ✅ Initialize Session State Variables (Only Once)
 session_defaults = {
