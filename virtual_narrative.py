@@ -5,7 +5,6 @@ import re  # For extracting numeric scores
 from fpdf import FPDF  # For generating PDF reports
 import os  # For file path handling
 
-
 # ✅ Function to Extract Numeric Scores from Responses
 def extract_score(response):
     """
@@ -17,7 +16,6 @@ def extract_score(response):
     """
     match = re.search(r"\((\d+)\)", response)  # Look for a number inside parentheses
     return int(match.group(1)) if match else 1  # Default to 1 if no match
-
 
 # ✅ Function to Create Gauge Chart
 def create_gauge_chart(score):
@@ -52,19 +50,8 @@ def create_gauge_chart(score):
     fig.update_layout(width=500, height=300)
     return fig
 
-
 # ✅ Set page configuration to wide mode (MUST be the first Streamlit command)
 st.set_page_config(page_title="The Virtual Narrative", page_icon="🌐", layout="wide")
-
-# ✅ Hide default Streamlit elements (menu, footer, header)
-hide_streamlit_style = """
-    <style>
-        #MainMenu {visibility: hidden;}
-        footer {visibility: hidden;}
-        header {visibility: hidden;}
-    </style>
-"""
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 # ✅ Initialize Session State Variables (Only Once)
 session_defaults = {
@@ -101,11 +88,9 @@ for key, value in session_defaults.items():
     if key not in st.session_state:
         st.session_state[key] = value
 
-
 # ✅ Open the image file and encode it as base64
 with open("logo.png", "rb") as image_file:
     encoded_image = base64.b64encode(image_file.read()).decode()
-
 
 # ✅ Add centered content using markdown (with background color)
 st.markdown(
@@ -141,6 +126,18 @@ st.markdown(
     .stButton button:hover {{
         background-color: #ff8c00;  /* Darker orange on hover */
     }}
+    .next-button button {{
+        background-color: #0047AB;  /* Dark blue background */
+        color: white;  /* White text */
+        font-size: 20px;
+        padding: 15px 30px;
+        border-radius: 5px;
+        cursor: pointer;
+        border: none;
+    }}
+    .next-button button:hover {{
+        background-color: #003366;  /* Darker blue on hover */
+    }}
     </style>
     <div class="top-page">
         <img src="data:image/png;base64,{encoded_image}" width="250" style="display:block; margin-left:auto; margin-right:auto;">
@@ -162,7 +159,6 @@ if st.button("Let's do this!", key="start_button"):
     st.session_state.data_privacy_accepted = False  # Set this flag to False when starting
     st.success("Great! Let's begin your Data Maturity Assessment, but first a word on Data Privacy and protection.")
 st.markdown('</div>', unsafe_allow_html=True)
-
 
 # ✅ Data Privacy & Protection Page (Page 2)
 if st.session_state.start_assessment and not st.session_state.data_privacy_accepted:
@@ -215,7 +211,6 @@ if st.session_state.data_privacy_accepted and not st.session_state.user_info_com
 
             st.session_state.user_info_complete = True
             st.success(f"Thanks, {first_name}! Nice to meet you!. Let's make this assessment even more personalized 🔥. How important are each of these data practices to your organization? 🤔")
-         
 
 # ✅ Dynamic Weighting Section
 if st.session_state.user_info_complete and not st.session_state.dynamic_weights_set:
@@ -264,21 +259,15 @@ if st.session_state.user_info_complete and not st.session_state.dynamic_weights_
     button_container = st.container()  # Use a container for buttons
 
     with button_container:
-        # Back button (only show if not on the first question)
-        if st.session_state.current_question_index > 0:
-            if st.button("⬅️ Back", key=f"back_{st.session_state.current_question_index}"):
-                st.session_state.current_question_index -= 1
-                st.rerun()  # Force a rerun to update the question
-
         # Next button (only show if not on the last question)
         if st.session_state.current_question_index < len(questions) - 1:
-            if st.button("Next ➡️", key=f"next_{st.session_state.current_question_index}"):
+            if st.button("Next ➡️", key=f"next_{st.session_state.current_question_index}", help="Move to the next question"):
                 # Save the response
                 st.session_state[f"q{st.session_state.current_question_index}_response"] = response
                 st.session_state.current_question_index += 1
                 st.rerun()  # Force a rerun to update the question
         else:
-            if st.button("Submit", key="submit_dynamic_weighting"):
+            if st.button("Submit", key="submit_dynamic_weighting", help="Submit your responses"):
                 # Save the response
                 st.session_state[f"q{st.session_state.current_question_index}_response"] = response
 
@@ -339,7 +328,7 @@ if st.session_state.dynamic_weights_set and not st.session_state.data_governance
         
         button_container = st.container()
         with button_container:
-            if st.button("Next ➡️", key="gov_q1_next"):
+            if st.button("Next ➡️", key="gov_q1_next", help="Move to the next question"):
                 st.session_state.gov_q1_response = gov_q1
                 st.session_state.current_question = 2
                 st.rerun()
@@ -354,10 +343,7 @@ if st.session_state.dynamic_weights_set and not st.session_state.data_governance
         
         button_container = st.container()
         with button_container:
-            if st.button("⬅️ Back", key="gov_q2_back"):
-                st.session_state.current_question = 1
-                st.rerun()
-            if st.button("Next ➡️", key="gov_q2_next"):
+            if st.button("Next ➡️", key="gov_q2_next", help="Move to the next question"):
                 st.session_state.gov_q2_response = gov_q2
                 st.session_state.current_question = 3
                 st.rerun()
@@ -372,15 +358,11 @@ if st.session_state.dynamic_weights_set and not st.session_state.data_governance
         
         button_container = st.container()
         with button_container:
-            if st.button("⬅️ Back", key="gov_q3_back"):
-                st.session_state.current_question = 2
-                st.rerun()
-            if st.button("Submit Governance Responses", key="gov_q3_submit"):
+            if st.button("Submit Governance Responses", key="gov_q3_submit", help="Submit your responses"):
                 st.session_state.gov_q3_response = gov_q3
                 st.session_state.data_governance_complete = True
                 st.session_state.current_question = 1  # Reset for the next section
-                st.success(f"Awesome work, {st.session_state.user_first_name}! – On to Data Quality! 📊 How do you ensure that your data is accurate, complete and consistent? Let’s dig in, David")
-
+                st.success(f"Awesome work, {st.session_state.user_first_name}! – On to Data Quality! 📊 How do you ensure that your data is accurate, complete and consistent?")
 
 # 📊 **SECTION 2: DATA QUALITY**
 if st.session_state.data_governance_complete and not st.session_state.data_quality_complete:
@@ -397,7 +379,7 @@ if st.session_state.data_governance_complete and not st.session_state.data_quali
         
         button_container = st.container()
         with button_container:
-            if st.button("Next ➡️", key="dq1_next"):
+            if st.button("Next ➡️", key="dq1_next", help="Move to the next question"):
                 st.session_state.dq1_response = dq1
                 st.session_state.current_question = 2
                 st.rerun()
@@ -412,10 +394,7 @@ if st.session_state.data_governance_complete and not st.session_state.data_quali
         
         button_container = st.container()
         with button_container:
-            if st.button("⬅️ Back", key="dq2_back"):
-                st.session_state.current_question = 1
-                st.rerun()
-            if st.button("Next ➡️", key="dq2_next"):
+            if st.button("Next ➡️", key="dq2_next", help="Move to the next question"):
                 st.session_state.dq2_response = dq2
                 st.session_state.current_question = 3
                 st.rerun()
@@ -430,15 +409,11 @@ if st.session_state.data_governance_complete and not st.session_state.data_quali
         
         button_container = st.container()
         with button_container:
-            if st.button("⬅️ Back", key="dq3_back"):
-                st.session_state.current_question = 2
-                st.rerun()
-            if st.button("Submit Data Quality Responses", key="dq3_submit"):
+            if st.button("Submit Data Quality Responses", key="dq3_submit", help="Submit your responses"):
                 st.session_state.dq3_response = dq3
                 st.session_state.data_quality_complete = True
                 st.session_state.current_question = 1  # Reset for the next section
                 st.success(f"You’re on fire 🔥 {st.session_state.user_first_name}! Now let’s take a look at how your metadata is being managed and if it’s in a centralized place. 📚")
-
 
 # 🏷 **SECTION 3: METADATA MANAGEMENT**
 if st.session_state.data_quality_complete and not st.session_state.metadata_management_complete:
@@ -455,7 +430,7 @@ if st.session_state.data_quality_complete and not st.session_state.metadata_mana
         
         button_container = st.container()
         with button_container:
-            if st.button("Next ➡️", key="mm1_next"):
+            if st.button("Next ➡️", key="mm1_next", help="Move to the next question"):
                 st.session_state.mm1_response = mm1
                 st.session_state.current_question = 2
                 st.rerun()
@@ -470,10 +445,7 @@ if st.session_state.data_quality_complete and not st.session_state.metadata_mana
         
         button_container = st.container()
         with button_container:
-            if st.button("⬅️ Back", key="mm2_back"):
-                st.session_state.current_question = 1
-                st.rerun()
-            if st.button("Next ➡️", key="mm2_next"):
+            if st.button("Next ➡️", key="mm2_next", help="Move to the next question"):
                 st.session_state.mm2_response = mm2
                 st.session_state.current_question = 3
                 st.rerun()
@@ -488,15 +460,11 @@ if st.session_state.data_quality_complete and not st.session_state.metadata_mana
         
         button_container = st.container()
         with button_container:
-            if st.button("⬅️ Back", key="mm3_back"):
-                st.session_state.current_question = 2
-                st.rerun()
-            if st.button("Submit Metadata Management Responses", key="mm3_submit"):
+            if st.button("Submit Metadata Management Responses", key="mm3_submit", help="Submit your responses"):
                 st.session_state.mm3_response = mm3
                 st.session_state.metadata_management_complete = True
                 st.session_state.current_question = 1  # Reset for the next section
                 st.success(f"That was easy, right? Great job {st.session_state.user_first_name}! Moving on to Data Integration 🔗! Is your data flowing seamlessly across systems?")
-
 
 # 🔗 **SECTION 4: DATA INTEGRATION**
 if st.session_state.metadata_management_complete and not st.session_state.data_integration_complete:
@@ -513,7 +481,7 @@ if st.session_state.metadata_management_complete and not st.session_state.data_i
         
         button_container = st.container()
         with button_container:
-            if st.button("Next ➡️", key="di1_next"):
+            if st.button("Next ➡️", key="di1_next", help="Move to the next question"):
                 st.session_state.di1_response = di1
                 st.session_state.current_question = 2
                 st.rerun()
@@ -528,10 +496,7 @@ if st.session_state.metadata_management_complete and not st.session_state.data_i
         
         button_container = st.container()
         with button_container:
-            if st.button("⬅️ Back", key="di2_back"):
-                st.session_state.current_question = 1
-                st.rerun()
-            if st.button("Next ➡️", key="di2_next"):
+            if st.button("Next ➡️", key="di2_next", help="Move to the next question"):
                 st.session_state.di2_response = di2
                 st.session_state.current_question = 3
                 st.rerun()
@@ -546,15 +511,11 @@ if st.session_state.metadata_management_complete and not st.session_state.data_i
         
         button_container = st.container()
         with button_container:
-            if st.button("⬅️ Back", key="di3_back"):
-                st.session_state.current_question = 2
-                st.rerun()
-            if st.button("Submit Data Integration Responses", key="di3_submit"):
+            if st.button("Submit Data Integration Responses", key="di3_submit", help="Submit your responses"):
                 st.session_state.di3_response = di3
                 st.session_state.data_integration_complete = True
                 st.session_state.current_question = 1  # Reset for the next section
                 st.success(f"Awesome work, {st.session_state.user_first_name}! You're almost halfway there! 🤖 Time to explore how well you're using analytics and AI to make decisions.")
-
 
 # 📊 **SECTION 5: DATA ANALYTICS & AI**
 if st.session_state.data_integration_complete and not st.session_state.data_analytics_complete:
@@ -571,7 +532,7 @@ if st.session_state.data_integration_complete and not st.session_state.data_anal
         
         button_container = st.container()
         with button_container:
-            if st.button("Next ➡️", key="ai1_next"):
+            if st.button("Next ➡️", key="ai1_next", help="Move to the next question"):
                 st.session_state.ai1_response = ai1
                 st.session_state.current_question = 2
                 st.rerun()
@@ -586,10 +547,7 @@ if st.session_state.data_integration_complete and not st.session_state.data_anal
         
         button_container = st.container()
         with button_container:
-            if st.button("⬅️ Back", key="ai2_back"):
-                st.session_state.current_question = 1
-                st.rerun()
-            if st.button("Next ➡️", key="ai2_next"):
+            if st.button("Next ➡️", key="ai2_next", help="Move to the next question"):
                 st.session_state.ai2_response = ai2
                 st.session_state.current_question = 3
                 st.rerun()
@@ -604,15 +562,11 @@ if st.session_state.data_integration_complete and not st.session_state.data_anal
         
         button_container = st.container()
         with button_container:
-            if st.button("⬅️ Back", key="ai3_back"):
-                st.session_state.current_question = 2
-                st.rerun()
-            if st.button("Submit Data Analytics & AI Responses", key="ai3_submit"):
+            if st.button("Submit Data Analytics & AI Responses", key="ai3_submit", help="Submit your responses"):
                 st.session_state.ai3_response = ai3
                 st.session_state.data_analytics_complete = True
                 st.session_state.current_question = 1  # Reset for the next section
                 st.success(f"You’re on fire 🔥 {st.session_state.user_first_name}! Just a few more steps! 🔒 How secure is your data? Let’s make sure everything is locked down.")
-
 
 # 🔒 **SECTION 6: DATA SECURITY & PRIVACY**
 if st.session_state.data_analytics_complete and not st.session_state.data_security_complete:
@@ -629,7 +583,7 @@ if st.session_state.data_analytics_complete and not st.session_state.data_securi
         
         button_container = st.container()
         with button_container:
-            if st.button("Next ➡️", key="sp1_next"):
+            if st.button("Next ➡️", key="sp1_next", help="Move to the next question"):
                 st.session_state.sp1_response = sp1
                 st.session_state.current_question = 2
                 st.rerun()
@@ -644,10 +598,7 @@ if st.session_state.data_analytics_complete and not st.session_state.data_securi
         
         button_container = st.container()
         with button_container:
-            if st.button("⬅️ Back", key="sp2_back"):
-                st.session_state.current_question = 1
-                st.rerun()
-            if st.button("Next ➡️", key="sp2_next"):
+            if st.button("Next ➡️", key="sp2_next", help="Move to the next question"):
                 st.session_state.sp2_response = sp2
                 st.session_state.current_question = 3
                 st.rerun()
@@ -662,16 +613,13 @@ if st.session_state.data_analytics_complete and not st.session_state.data_securi
         
         button_container = st.container()
         with button_container:
-            if st.button("⬅️ Back", key="sp3_back"):
-                st.session_state.current_question = 2
-                st.rerun()
-            if st.button("Submit Data Security & Privacy Responses", key="sp3_submit"):
+            if st.button("Submit Data Security & Privacy Responses", key="sp3_submit", help="Submit your responses"):
                 st.session_state.sp3_response = sp3
                 st.session_state.data_security_complete = True
                 st.session_state.current_question = 1  # Reset for the next section
                 st.session_state.all_sections_completed = True  # Mark all sections as completed
                 st.success(f"🎉 Congratulations, {st.session_state.user_first_name}! You've completed the assessment! Here’s how your data maturity looks:")
-            
+
 # ✅ Function to Generate AI-Driven Insights
 def generate_ai_insights(scores):
     """Generate AI-driven insights based on the user's responses."""
@@ -727,7 +675,6 @@ def generate_ai_insights(scores):
 
     return insights
 
-
 # ✅ Define Analytics Capabilities for Each Maturity Stage
 analytics_capabilities = {
     "Initial/Ad Hoc": {
@@ -771,7 +718,6 @@ analytics_capabilities = {
         "example": "Real-time pricing adjustments based on market conditions."
     }
 }
-
 
 # ✅ Define Dynamic Recommendations for Each Maturity Stage
 dynamic_recommendations = {
@@ -832,17 +778,24 @@ dynamic_recommendations = {
     }
 }
 
-
 def generate_pdf_report(maturity_level, weighted_avg_score, recommendation, weighted_scores, insights, current_capabilities, recommendations, roadmap):
     pdf = FPDF()
     pdf.add_page()
-    
-    # Use a built-in font (e.g., Arial or Helvetica)
-    pdf.set_font("Arial", size=12)
+
+    # Add all variants of the DejaVuSans font
+    font_path = r"C:\Users\dkeya\Documents\projects\virtual_narrative\DejaVuSans.ttf\ttf\DejaVuSans.ttf"
+    pdf.add_font("DejaVuSans", "", font_path, uni=True)  # Regular
+    pdf.add_font("DejaVuSans", "B", font_path, uni=True)  # Bold
+    pdf.add_font("DejaVuSans", "I", font_path, uni=True)  # Italic
+    pdf.add_font("DejaVuSans", "BI", font_path, uni=True)  # Bold-Italic
+
+    # Set the default font to regular
+    pdf.set_font("DejaVuSans", size=12)
 
     try:
         # Attempt to open the logo file
-        with open("logo_1.png", "rb") as image_file:
+        logo_path = r"C:\Users\dkeya\Documents\projects\virtual_narrative\logo_1.png"
+        with open(logo_path, "rb") as image_file:
             encoded_image = base64.b64encode(image_file.read()).decode()
         
         # Save the base64 image to a temporary file
@@ -858,53 +811,56 @@ def generate_pdf_report(maturity_level, weighted_avg_score, recommendation, weig
         return  # Exit the function if the logo file is missing
 
     # Add title
-    pdf.set_font("Arial", "B", 16)  # Bold and larger font for the title
+    pdf.set_font("DejaVuSans", "B", 16)  # Bold and larger font for the title
     pdf.cell(200, 10, txt="The Virtual Narrative: Data Maturity Assessment Report", ln=True, align="C")
     pdf.ln(10)  # Add some space after the title
 
     # Add the introduction paragraph
-    pdf.set_font("Arial", size=12)  # Regular font for content
-    pdf.multi_cell(200, 10, txt="In today’s rapidly evolving digital world, data is not just an asset; it's the backbone of decision-making, strategy, and innovation. Understanding the maturity of your data practices is key to unlocking its full potential. The concept of Data Maturity reflects how well an organization manages, integrates, analyzes, and secures its data. It’s a journey that takes an organization from basic, reactive data handling to a sophisticated, proactive approach where data is seamlessly integrated into decision-making processes.", align="L")
-    pdf.ln(5)  # Add some space
-    pdf.multi_cell(200, 10, txt="The journey through data maturity is often divided into five stages:", align="L")
-    pdf.multi_cell(200, 10, txt="- Initial/Ad Hoc: Where data processes are disjointed and unpredictable.", align="L")
-    pdf.multi_cell(200, 10, txt="- Developing: Where basic processes are established but still lack consistency.", align="L")
-    pdf.multi_cell(200, 10, txt="- Defined: Where standard processes are in place, and data is beginning to drive decisions.", align="L")
-    pdf.multi_cell(200, 10, txt="- Managed: Where data management is more structured, automated, and fully integrated into business processes.", align="L")
-    pdf.multi_cell(200, 10, txt="- Optimized: Where data is fully embedded in decision-making, and advanced analytics and AI continuously improve business outcomes.", align="L")
-    pdf.ln(5)  # Add some space
-    pdf.multi_cell(200, 10, txt="Each stage reflects an organization's growing ability to leverage data to gain insights, optimize operations, and drive innovation. In this assessment, we’ll evaluate where your organization stands on this maturity journey and provide actionable insights to help you advance.", align="L")
-    pdf.ln(5)  # Add some space
-    pdf.multi_cell(200, 10, txt="Now, let’s see where your organization’s data maturity currently stands with the Data Maturity Score, as visualized below in the gauge chart.", align="L")
+    pdf.set_font("DejaVuSans", size=12)  # Regular font for content
+    intro_text = """
+    In today’s rapidly evolving digital world, data is not just an asset; it's the backbone of decision-making, strategy, and innovation. Understanding the maturity of your data practices is key to unlocking its full potential. The concept of Data Maturity reflects how well an organization manages, integrates, analyzes, and secures its data. It’s a journey that takes an organization from basic, reactive data handling to a sophisticated, proactive approach where data is seamlessly integrated into decision-making processes.
+
+    The journey through data maturity is often divided into five stages:
+    - Initial/Ad Hoc: Where data processes are disjointed and unpredictable.
+    - Developing: Where basic processes are established but still lack consistency.
+    - Defined: Where standard processes are in place, and data is beginning to drive decisions.
+    - Managed: Where data management is more structured, automated, and fully integrated into business processes.
+    - Optimized: Where data is fully embedded in decision-making, and advanced analytics and AI continuously improve business outcomes.
+
+    Each stage reflects an organization's growing ability to leverage data to gain insights, optimize operations, and drive innovation. In this assessment, we’ll evaluate where your organization stands on this maturity journey and provide actionable insights to help you advance.
+
+    Now, let’s see where your organization’s data maturity currently stands with the Data Maturity Score, as visualized below in the gauge chart.
+    """
+    pdf.multi_cell(200, 10, txt=intro_text.replace("’", "'"), align="L")
     pdf.ln(10)  # Add some space after the introduction
 
     # Add maturity level and score
-    pdf.set_font("Arial", "B", 14)  # Bold for section titles
+    pdf.set_font("DejaVuSans", "B", 14)  # Bold for section titles
     pdf.cell(200, 10, txt="Maturity Level and Score", ln=True)
-    pdf.set_font("Arial", size=12)  # Regular font for content
+    pdf.set_font("DejaVuSans", size=12)  # Regular font for content
     pdf.cell(200, 10, txt=f"Your organization's data maturity level is: {maturity_level.replace('🔴', 'Initial/Ad Hoc').replace('🟠', 'Developing').replace('🟡', 'Defined').replace('🟢', 'Managed').replace('🔵', 'Optimized')}", ln=True)
     pdf.cell(200, 10, txt=f"Weighted Average Maturity Score: {weighted_avg_score:.2f}/5", ln=True)
     pdf.cell(200, 10, txt=f"Recommendation: {recommendation}", ln=True)
     pdf.ln(10)  # Add some space after the section
 
     # Add weighted scores breakdown
-    pdf.set_font("Arial", "B", 14)  # Bold for section titles
+    pdf.set_font("DejaVuSans", "B", 14)  # Bold for section titles
     pdf.cell(200, 10, txt="Breakdown by Category (Weighted Scores)", ln=True)
-    pdf.set_font("Arial", size=12)  # Regular font for content
+    pdf.set_font("DejaVuSans", size=12)  # Regular font for content
     for category, score in weighted_scores.items():
         pdf.cell(200, 10, txt=f"{category}: {score:.2f}/5", ln=True)
     pdf.ln(10)  # Add some space after the section
 
     # Add AI-driven insights
-    pdf.set_font("Arial", "B", 14)  # Bold for section titles
+    pdf.set_font("DejaVuSans", "B", 14)  # Bold for section titles
     pdf.cell(200, 10, txt="AI-Driven Insights", ln=True)
-    pdf.set_font("Arial", size=12)  # Regular font for content
+    pdf.set_font("DejaVuSans", size=12)  # Regular font for content
     for insight in insights:
         pdf.multi_cell(200, 10, txt=f"- {insight.replace('🔴', 'Initial/Ad Hoc').replace('🟠', 'Developing').replace('🟡', 'Defined').replace('🟢', 'Managed').replace('🔵', 'Optimized')}", align="L")
     pdf.ln(10)  # Add some space after the section
 
     # Add current analytics capabilities with dynamic color
-    pdf.set_font("Arial", "B", 14)  # Bold for section titles
+    pdf.set_font("DejaVuSans", "B", 14)  # Bold for section titles
     if maturity_level == "🔴 Initial/Ad Hoc":
         pdf.set_text_color(255, 0, 0)  # Red for Initial/Ad Hoc
     elif maturity_level == "🟠 Developing":
@@ -917,70 +873,69 @@ def generate_pdf_report(maturity_level, weighted_avg_score, recommendation, weig
         pdf.set_text_color(0, 0, 255)  # Blue for Optimized
     pdf.cell(200, 10, txt="Current Analytics Capabilities", ln=True)
     pdf.set_text_color(0, 0, 0)  # Reset to black
-    pdf.set_font("Arial", size=12)  # Regular font for content
+    pdf.set_font("DejaVuSans", size=12)  # Regular font for content
     for capability in current_capabilities["capabilities"]:
         # Split the capability into type and description
         capability_type, capability_desc = capability.split(":", 1)
-        pdf.set_font("Arial", "B", 12)  # Bold for capability type
+        pdf.set_font("DejaVuSans", "B", 12)  # Bold for capability type
         pdf.cell(200, 10, txt=f"- {capability_type}:", ln=True)
-        pdf.set_font("Arial", size=12)  # Regular font for description
+        pdf.set_font("DejaVuSans", size=12)  # Regular font for description
         pdf.multi_cell(200, 10, txt=f"  {capability_desc.strip()}", align="L")
     pdf.cell(200, 10, txt=f"Example: {current_capabilities['example']}", ln=True)
     pdf.ln(10)  # Add some space after the section
 
     # Add dynamic recommendations
-    pdf.set_font("Arial", "B", 14)  # Bold for section titles
+    pdf.set_font("DejaVuSans", "B", 14)  # Bold for section titles
     pdf.cell(200, 10, txt="Recommendations for Improvement", ln=True)
-    pdf.set_font("Arial", size=12)  # Regular font for content
+    pdf.set_font("DejaVuSans", size=12)  # Regular font for content
     for rec in recommendations["recommendations"]:
         pdf.multi_cell(200, 10, txt=f"- {rec}", align="L")
-    pdf.set_font("Arial", "B", 12)  # Bold for subheadings
+    pdf.set_font("DejaVuSans", "B", 12)  # Bold for subheadings
     pdf.cell(200, 10, txt="Next Steps:", ln=True)
-    pdf.set_font("Arial", size=12)  # Regular font for content
+    pdf.set_font("DejaVuSans", size=12)  # Regular font for content
     for step in recommendations["next_steps"]:
         pdf.multi_cell(200, 10, txt=f"- {step}", align="L")
     pdf.ln(10)  # Add some space after the section
 
     # Add roadmap
-    pdf.set_font("Arial", "B", 14)  # Bold for section titles
+    pdf.set_font("DejaVuSans", "B", 14)  # Bold for section titles
     pdf.cell(200, 10, txt="Roadmap to Higher Maturity Levels", ln=True)
-    pdf.set_font("Arial", size=12)  # Regular font for content
+    pdf.set_font("DejaVuSans", size=12)  # Regular font for content
     for stage, details in roadmap.items():
-        pdf.set_font("Arial", "B", 12)  # Bold for subheadings
+        pdf.set_font("DejaVuSans", "B", 12)  # Bold for subheadings
         pdf.cell(200, 10, txt=f"{stage}:", ln=True)
-        pdf.set_font("Arial", size=12)  # Regular font for content
+        pdf.set_font("DejaVuSans", size=12)  # Regular font for content
         for capability in details["capabilities"]:
             # Split the capability into type and description
             capability_type, capability_desc = capability.split(":", 1)
-            pdf.set_font("Arial", "B", 12)  # Bold for capability type
+            pdf.set_font("DejaVuSans", "B", 12)  # Bold for capability type
             pdf.cell(200, 10, txt=f"- {capability_type}:", ln=True)
-            pdf.set_font("Arial", size=12)  # Regular font for description
+            pdf.set_font("DejaVuSans", size=12)  # Regular font for description
             pdf.multi_cell(200, 10, txt=f"  {capability_desc.strip()}", align="L")
         pdf.cell(200, 10, txt=f"Example: {details['example']}", ln=True)
     pdf.ln(10)  # Add some space after the section
 
     # Add a concluding note
-    pdf.set_font("Arial", "I", 12)  # Italic for the concluding note
+    pdf.set_font("DejaVuSans", "I", 12)  # Italic for the concluding note
     pdf.cell(200, 10, txt="Thank you for using The Virtual Narrative: Data Maturity Assessment Tool!", ln=True, align="C")
     pdf.ln(10)  # Add some space after the note
 
     # Add a creative call to action
-    pdf.set_font("Arial", "B", 14)  # Bold for the call to action
+    pdf.set_font("DejaVuSans", "B", 14)  # Bold for the call to action
     pdf.set_text_color(0, 0, 255)  # Blue for emphasis
     pdf.cell(200, 10, txt="Need a Helping Hand Across the Chasm to Data Maturity?", ln=True, align="C")
-    pdf.set_font("Arial", size=12)  # Regular font for content
+    pdf.set_font("DejaVuSans", size=12)  # Regular font for content
     pdf.set_text_color(0, 0, 0)  # Reset to black
     pdf.cell(200, 10, txt="Embarking on the journey to data maturity can be challenging, but you don't have to do it alone.", ln=True, align="C")
     pdf.cell(200, 10, txt="Reach out to us for expert guidance and support:", ln=True, align="C")
-    pdf.set_font("Arial", "B", 12)  # Bold for contact details
+    pdf.set_font("DejaVuSans", "B", 12)  # Bold for contact details
     pdf.cell(200, 10, txt="Virtual Analytics", ln=True, align="C")
     pdf.cell(200, 10, txt="www.virtualanalytics.co.ke | info@virtualanalytics.co.ke", ln=True, align="C")
-    pdf.set_font("Arial", size=12)  # Regular font for content
+    pdf.set_font("DejaVuSans", size=12)  # Regular font for content
     pdf.cell(200, 10, txt="Let us help you unlock the full potential of your data!", ln=True, align="C")
 
     # Save the PDF
     pdf.output("data_maturity_report.pdf")
-
 
 # ✅ Display Data Maturity Score after all sections are completed
 if st.session_state.all_sections_completed:
