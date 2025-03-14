@@ -231,27 +231,27 @@ if st.session_state.user_info_complete and not st.session_state.dynamic_weights_
     # Define the questions and their options
     questions = [
         {
-            "question": "1️⃣ How important is it for your organization to have clear **data governance** policies, including ownership and accountability?",
+            "question": "1️⃣ How important is it for your organization to have clear <span style='text-decoration: underline dotted;'>data governance</span> policies, including ownership and accountability?",
             "options": ["Not Important (1)", "Slightly Important (2)", "Moderately Important (3)", "Very Important (4)", "Extremely Important (5)"]
         },
         {
-            "question": "2️⃣ How critical is **data quality**—ensuring accuracy and completeness—for your organization's decision-making?",
+            "question": "2️⃣ How critical is <span style='text-decoration: underline dotted;'>data quality</span>—ensuring accuracy and completeness—for your organization's decision-making?",
             "options": ["Not Critical (1)", "Slightly Critical (2)", "Moderately Critical (3)", "Very Critical (4)", "Extremely Critical (5)"]
         },
         {
-            "question": "3️⃣ How important is **metadata management**, such as maintaining a centralized metadata repository, for your organization?",
+            "question": "3️⃣ How important is <span style='text-decoration: underline dotted;'>metadata management</span>, such as maintaining a centralized metadata repository, for your organization?",
             "options": ["Not Important (1)", "Slightly Important (2)", "Moderately Important (3)", "Very Important (4)", "Extremely Important (5)"]
         },
         {
-            "question": "4️⃣ How important is **data integration**, ensuring seamless connectivity across different systems, for your organization?",
+            "question": "4️⃣ How important is <span style='text-decoration: underline dotted;'>data integration</span>, ensuring seamless connectivity across different systems, for your organization?",
             "options": ["Not Important (1)", "Slightly Important (2)", "Moderately Important (3)", "Very Important (4)", "Extremely Important (5)"]
         },
         {
-            "question": "5️⃣ How important is leveraging **data analytics and AI** for decision-making in your organization?",
+            "question": "5️⃣ How important is leveraging <span style='text-decoration: underline dotted;'>data analytics and AI</span> for decision-making in your organization?",
             "options": ["Not Important (1)", "Slightly Important (2)", "Moderately Important (3)", "Very Important (4)", "Extremely Important (5)"]
         },
         {
-            "question": "6️⃣ How important is **data security**, including compliance with regulations, for your organization?",
+            "question": "6️⃣ How important is <span style='text-decoration: underline dotted;'>data security</span>, including compliance with regulations, for your organization?",
             "options": ["Not Important (1)", "Slightly Important (2)", "Moderately Important (3)", "Very Important (4)", "Extremely Important (5)"]
         }
     ]
@@ -262,7 +262,7 @@ if st.session_state.user_info_complete and not st.session_state.dynamic_weights_
 
     # Display the current question
     current_question = questions[st.session_state.current_question_index]
-    st.write(f"### {current_question['question']}")
+    st.write(f"### {current_question['question']}", unsafe_allow_html=True)  # Enable HTML rendering
     response = st.radio("Select your response:", current_question["options"], key=f"q{st.session_state.current_question_index}")
 
     # Add buttons for navigation
