@@ -173,17 +173,20 @@ st.markdown('</div>', unsafe_allow_html=True)
 # ✅ Data Privacy & Protection Page (Page 2)
 if st.session_state.start_assessment and not st.session_state.data_privacy_accepted:
     st.write("## Data Privacy & Protection")
-    st.write("""
+    st.markdown("""
         We take your Data Privacy seriously. 
         The data you share with us will be treated as though it were our own. We will use this information 
         solely to provide you with a bespoke report with actionable insights into your current state of 
         Data Maturity, alongside suggestions on how you can improve. Over time, we will compile research 
         findings for industries and regions, but these will be completely anonymized. 
-        [Read our full Privacy Policy below](#privacy-policy).
-    """)
+        <a href="#privacy-policy" style="color: orange; text-decoration: underline;" onclick="togglePrivacyPolicy()">Read our full Privacy Policy below</a>.
+    """, unsafe_allow_html=True)
 
-    # Add a button to display the Privacy Policy
-    if st.button("View Privacy Policy"):
+    # Add a placeholder for the privacy policy section
+    st.markdown("<a name='privacy-policy'></a>", unsafe_allow_html=True)
+
+    # Use st.expander to hide the privacy policy by default
+    with st.expander("📜 Privacy Policy", expanded=False):
         try:
             # Get the absolute path to the file
             file_path = os.path.join(os.path.dirname(__file__), "privacy_policy.txt")
@@ -192,6 +195,21 @@ if st.session_state.start_assessment and not st.session_state.data_privacy_accep
             st.markdown(privacy_policy_content, unsafe_allow_html=True)
         except FileNotFoundError:
             st.error("Privacy Policy file not found. Please ensure 'privacy_policy.txt' is in the correct directory.")
+
+    # Add JavaScript to toggle the expander when the link is clicked
+    st.markdown("""
+        <script>
+        function togglePrivacyPolicy() {
+            const expander = document.querySelector('.stExpander');
+            if (expander) {
+                const button = expander.querySelector('button');
+                if (button) {
+                    button.click(); // Simulate a click on the expander button
+                }
+            }
+        }
+        </script>
+    """, unsafe_allow_html=True)
 
     if st.button("Continue"):
         st.session_state.data_privacy_accepted = True  # Proceed to next section when the button is clicked
