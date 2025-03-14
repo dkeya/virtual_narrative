@@ -810,8 +810,8 @@ def generate_pdf_report(maturity_level, weighted_avg_score, recommendation, weig
     pdf = FPDF()
     pdf.add_page()
 
-    # Add all variants of the DejaVuSans font
-    font_path = r"C:\Users\dkeya\Documents\projects\virtual_narrative\DejaVuSans.ttf\ttf\DejaVuSans.ttf"
+    # Use a relative path to the font file
+    font_path = os.path.join(os.path.dirname(__file__), "fonts", "DejaVuSans.ttf")
     pdf.add_font("DejaVuSans", "", font_path, uni=True)  # Regular
     pdf.add_font("DejaVuSans", "B", font_path, uni=True)  # Bold
     pdf.add_font("DejaVuSans", "I", font_path, uni=True)  # Italic
@@ -822,7 +822,7 @@ def generate_pdf_report(maturity_level, weighted_avg_score, recommendation, weig
 
     try:
         # Attempt to open the logo file
-        logo_path = r"C:\Users\dkeya\Documents\projects\virtual_narrative\logo_1.png"
+        logo_path = os.path.join(os.path.dirname(__file__), "logo_1.png")
         with open(logo_path, "rb") as image_file:
             encoded_image = base64.b64encode(image_file.read()).decode()
         
