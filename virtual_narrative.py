@@ -31,11 +31,13 @@ def extract_score(response):
     return int(match.group(1)) if match else 1  # Default to 1 if no match
 
 # ✅ Function to Create Gauge Chart
-def create_gauge_chart(score):
+def create_gauge_chart(score, width=500, height=300):
     """
     Create a gauge chart for the data maturity score.
     Args:
         score (float): The data maturity score (between 1 and 5).
+        width (int): Width of the chart.
+        height (int): Height of the chart.
     Returns:
         plotly.graph_objects.Figure: The gauge chart figure.
     """
@@ -60,7 +62,7 @@ def create_gauge_chart(score):
             }
         }
     ))
-    fig.update_layout(width=500, height=300)
+    fig.update_layout(width=width, height=height)
     return fig
 
 # ✅ Initialize Session State Variables (Only Once)
@@ -90,7 +92,8 @@ session_defaults = {
     "di1_response": " (1)", "di2_response": " (1)", "di3_response": " (1)",
     "ai1_response": " (1)", "ai2_response": " (1)", "ai3_response": " (1)",
     "sp1_response": " (1)", "sp2_response": " (1)", "sp3_response": " (1)",
-    "current_question": 1  # Track the current question in a section
+    "current_question": 1,  # Track the current question in a section
+    "is_mobile": False  # Track if the app is running on a mobile device
 }
 
 # Initialize session state variables if they don't exist
@@ -99,8 +102,12 @@ for key, value in session_defaults.items():
         st.session_state[key] = value
 
 # ✅ Open the image file and encode it as base64
-with open("logo.png", "rb") as image_file:
-    encoded_image = base64.b64encode(image_file.read()).decode()
+try:
+    with open("logo.png", "rb") as image_file:
+        encoded_image = base64.b64encode(image_file.read()).decode()
+except FileNotFoundError:
+    st.error("Logo file not found. Please ensure 'logo.png' is in the correct directory.")
+    encoded_image = ""  # Use a placeholder or default image
 
 # ✅ Add centered content using markdown (with background color)
 st.markdown(
@@ -1000,9 +1007,6 @@ if st.session_state.all_sections_completed:
     # Calculate the weighted average maturity score (between 1 and 5)
     weighted_avg_score = sum(weighted_scores.values())
 
-    # Create and display the gauge chart with a unique key
-    st.plotly_chart(create_gauge_chart(weighted_avg_score), key="gauge_chart_final")
-
     # Determine Maturity Level & Recommendations
     if weighted_avg_score <= 1.5:
         maturity_level = "🔴 Initial/Ad Hoc"
@@ -1024,6 +1028,16 @@ if st.session_state.all_sections_completed:
     st.write(f"### 🎯 Your Organization's Maturity Level: {maturity_level}")
     st.write(f"📊 **Weighted Average Maturity Score:** {weighted_avg_score:.2f}/5")
     st.write(f"💡 **Recommendation:** {recommendation}")
+
+    # Use columns to center the gauge chart
+    col1, col2, col3 = st.columns([1, 2, 1])  # Adjust the column ratios for responsiveness
+
+    with col2:
+        # Adjust the gauge chart size for mobile devices
+        if st.session_state.get("is_mobile", False):  # Add a flag for mobile detection
+            st.plotly_chart(create_gauge_chart(weighted_avg_score, width=300, height=200), key="gauge_chart_final")
+        else:
+            st.plotly_chart(create_gauge_chart(weighted_avg_score), key="gauge_chart_final")
 
     # Display Individual Scores Breakdown
     st.write("### 📌 Breakdown by Category (Weighted Scores)")
